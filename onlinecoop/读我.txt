@@ -1,0 +1,8 @@
+本文件只教如何快速配置联机模组可以steam启动，更多详细信息看README_zh.md
+从onlinecoop文件夹里找“点击下方脚本配置Steam启动”如何点他下面的脚本“Configure Steam Launch.vbs”
+配置完成自动重启steam然后就可以从steam里启动联机模组
+
+联机网络工具推荐
+皎月连组网很便利：https://www.natpierce.cn/pc/downloads/index_new.html
+樱花网穿也不错：https://www.natfrp.com/
+uu加速器也带组网功能测试可行，小蓝盾也可以
