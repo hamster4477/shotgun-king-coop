@@ -81,7 +81,7 @@ function onlinecoop_choices_input()
 end
 function onlinecoop_choices_draw()
     local n=mode.net
-    if n.role~="client" or n.cg_active or onlinecoop_playback_busy() then return end
+    if n.role~="client" or n.cg_active or mode.coop_pause_menu_open or onlinecoop_playback_busy() then return end
     local c=n.remote_choices
     if not c then return end
     local zh=current_lang=="simplified_chinese"
@@ -90,11 +90,15 @@ function onlinecoop_choices_draw()
         rectfill(x,y,x+239,y+67,1);rect(x,y,x+239,y+67,3)
         lprint(zh and "黑骑士拾起了红色圣书" or "The Knight takes the Red Book",MCW/2,y+9,4,1)
     end
+    local tear_available=false
     for _,b in ipairs(c.buttons) do
         if b.label>0 then
+            if c.kind==2 and b.label==7 and not c.sent then tear_available=true end
             if b.label~=7 then rectfill(b.x,b.y,b.x+b.w-1,b.y+b.h-1,2) end
-            rect(b.x,b.y,b.x+b.w-1,b.y+b.h-1,c.sent and 3 or 5)
+            local color=c.sent and 3 or (b.label==7 and flr(time()*3)%2==0 and 4 or 5)
+            rect(b.x,b.y,b.x+b.w-1,b.y+b.h-1,color)
             if b.label~=7 then lprint((zh and labels_zh or labels_en)[b.label],b.x+b.w/2,b.y+3,4,1) end
         end
     end
+    if tear_available then coop_duel_draw_tear_notice(n,c.id) end
 end
