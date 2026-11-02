@@ -156,11 +156,25 @@ function coop_duel_tear(e,ca)
   coop_duel_offer(e)
  end)
 end
+-- The old by+150 hint fell below the 180-pixel viewport. Keep the actionable
+-- reminder above the board, and cue once per offer rather than every frame.
+function coop_duel_draw_tear_notice(state,serial)
+ if state.tear_notice_serial~=serial then
+  state.tear_notice_serial=serial;state.tear_notice_at=time()
+  sfx("sel_opt")
+ end
+ local flash=time()-(state.tear_notice_at or 0)<2
+ local color=flash and (flr(time()*4)%2==0 and 4 or 5) or 5
+ rectfill(MCW/2-106,2,MCW/2+106,14,1)
+ rect(MCW/2-106,2,MCW/2+106,14,color)
+ lprint(current_lang=="simplified_chinese" and "2P 可撕卡：点击左侧黑卡" or "2P: Click a black card on the left to tear",MCW/2,4,color,1)
+ return color
+end
 function coop_duel_offer(e)
  local d=mode.coop_duel
  if not d or d.finished or e~=coop_duel_live() then return end
  if d.aim or d.hop then coop_duel_execute(e);return end
- remove_buts();d.input=true;d.busy=false
+ remove_buts();d.input=true;d.busy=false;d.tear_available=false
  mode.coop_run_active=false
  local choices=coop_duel_hops(e)
  if coop_controller and coop_controller.begin_choices then
@@ -177,7 +191,9 @@ function coop_duel_offer(e)
   local b=mk_but(x,y,w,h,click);b.dp=DP_INTER+1
   b.dr=function(o,px,py)
    if board_hint then return end
-   rect(px+1,py+1,px+w-2,py+h-2,o.ov and 4 or 5)
+   local color=o.ov and 4 or 5
+   if not label and flr(time()*3)%2==0 then color=4 end
+   rect(px+1,py+1,px+w-2,py+h-2,color)
    if label then lprint(label,px+w/2,py+3,4,1) end
   end
  end
@@ -195,6 +211,7 @@ function coop_duel_offer(e)
   for _,sl in ipairs(card_slots) do
    local ca=sl.ca
    if ca and ca.team==0 then
+    d.tear_available=true
     button(sl.x,sl.y,22,29,function() coop_duel_tear(e,ca) end)
    end
   end
@@ -372,8 +389,12 @@ function coop_duel_draw()
  if d.input then
   lprint(current_lang=="simplified_chinese" and "2P 反叛骑士" or "2P Rebel Knight",bx+64,by-12,5,1)
   local cooldown=max(0,(d.tear_ready or 3)-d.round)
-  lprint(current_lang=="simplified_chinese" and (cooldown==0 and "可点击黑卡撕毁" or "撕卡冷却："..cooldown)
-   or (cooldown==0 and "Click a black card to tear" or "Tear cooldown: "..cooldown),bx+64,by+150,3,1)
+  if cooldown==0 and d.tear_available then
+   coop_duel_draw_tear_notice(d,d.round)
+  else
+   lprint(current_lang=="simplified_chinese" and (cooldown==0 and "没有可撕毁的黑卡" or "撕卡冷却："..cooldown)
+    or (cooldown==0 and "No black cards to tear" or "Tear cooldown: "..cooldown),bx+64,4,3,1)
+  end
  end
 end
 function coop_duel_lightning(e)
