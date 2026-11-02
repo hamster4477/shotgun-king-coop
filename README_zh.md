@@ -2,84 +2,60 @@
 
 **[English](README.md) | 简体中文**
 
-《**Shotgun King: The Final Checkmate／霰弹国王**》的社区合作模组。与伙伴分别操控**黑王和黑骑士**，一起挑战**王座、无尽与剿灭模式**，支持本地合作和局域网合作。
+一个人拿起霰弹枪，另一个人挥起骑士的刀锋。
 
-[下载模组](https://github.com/hamster4477/shotgun-king-coop/releases) · [详细游玩说明](onlinecoop/README_zh.md) · [反馈问题](https://github.com/hamster4477/shotgun-king-coop/issues)
+这是《**Shotgun King: The Final Checkmate／霰弹国王**》的双人合作模组。与朋友分别操控黑王和黑骑士，相互掩护、配合击杀，一起挑战王座、无尽与剿灭模式。支持本地合作与局域网联机，并加入围绕双人配合设计的新卡牌和战斗机制。
 
-## 主要功能
+**[下载模组](https://github.com/hamster4477/shotgun-king-coop/releases)** · [详细安装与联机说明](onlinecoop/README_zh.md) · [反馈问题](https://github.com/hamster4477/shotgun-king-coop/issues)
 
-- 本地与局域网合作共用卡牌、战斗规则和战役内容。
-- 联机时，**1P 操控黑王，2P 操控黑骑士**；双方分别运行游戏。
-- 在游戏内创建房间、复制连接码和加入房间。
-- 支持可互通的局域网、虚拟组网，以及 FRP 等 TCP 端口映射方式。
-- 双方可标记棋盘格子；2P 可发送选卡建议，由 1P 最终确认。
-- 同步棋盘动画，可切换采集帧率上限与动画播放模式。
-- 提供简体中文与英文界面提示。
+## 下载前
 
-此发行版使用局域网／TCP 联机，不包含实验性的 Steam P2P 功能。仍可配置从 Steam 启动模组。
+- 需要已安装的《霰弹国王》。这是模组，不包含游戏本体。
+- 联机启动工具适用于 Windows；双方分别运行游戏，并安装相同版本的模组。
+- 支持局域网、虚拟组网和 TCP 内网穿透。异地游玩需要自行配置组网或穿透工具。
+- 支持简体中文和英文。
 
-## 安装与开始游戏
+## 安装
 
-**运行要求：**Windows、已安装的《霰弹国王》；联机双方使用相同版本的模组。本项目不包含游戏本体。
+1. 从下载页的 **Assets** 中下载模组发行 ZIP，选择模组附件，而不是 GitHub 自动生成的 **Source code** 源码压缩包。
+2. 完全退出游戏，将压缩包内的 `onlinecoop` 文件夹放入游戏安装目录的 `mods` 文件夹。
+3. 启用 `onlinecoop`。如果安装过旧版 `coop`，请将其停用，避免两份合作模组同时运行。
 
-1. 从 [Releases](https://github.com/hamster4477/shotgun-king-coop/releases) 下载玩家 ZIP。如果尚未发布下载附件，可按下方说明自行打包。
-2. 完全退出游戏，将 ZIP 内的 `onlinecoop` 文件夹放进游戏的 `mods` 文件夹。
-3. 启用 `onlinecoop`，停用旧 `coop` 模组。更新前备份存档，不要同时启用两者。
-4. 局域网游玩请双击模组内的 **`Start Online Co-op Multi Core.vbs`**。需要单核兼容的电脑改用 **`Start Online Co-op.vbs`**。玩家无需安装 Python。
-5. 双方从“游玩”进入相同的局域网战役。房主创建房间并复制连接码，另一方粘贴后点击“加入”。
+安装后的路径应为：
 
-本地合作无需启动网络助手。希望直接从 Steam 启动局域网模式，可先运行一次 **`Configure Steam Launch.vbs`**。Steam 启动配置、工坊路径、虚拟组网与 FRP 设置见[详细游玩说明](onlinecoop/README_zh.md)。
-
-## 常用操作
-
-| 操作 | 功能 |
-| --- | --- |
-| **E**，随后点击格子 | 标记棋盘格子。 |
-| **F6** | 切换采集上限：10／15／20／30／45／60 帧，默认 30。 |
-| **F7** | 切换完整动画与追帧模式。 |
-| **2P 点击一组选卡** | 向 1P 发送选卡建议。 |
-| **2P 按 Tab** | 跳过黑骑士行动。 |
-
-默认使用完整动画模式，保留采集到的动画帧；网络较慢时可能需要等待缓冲。追帧模式允许跳过旧画面以减少延迟。两种模式都不能消除网络延迟，切换会在当前动画播放完成后生效。
-
-## 问题反馈与已知限制
-
-模组仍在持续测试。断线后目前需要双方重新建立连接，暂不支持自动重连。同一热点可能隔离设备；虚拟组网或端口映射工具需要另外配置。部分原版后处理效果与音效尚未在 2P 端还原。
-
-反馈问题时，请提供模组版本、游戏版本、战役、玩家角色、楼层、最后操作、动画播放模式和复现步骤，并附相关截图或日志片段。公开日志前请删除房间密钥、连接码和个人信息。
-
-## 开发与打包
-
-| 路径 | 内容 |
-| --- | --- |
-| `onlinecoop/shared/` | 本地与在线共用的卡牌、战斗规则。 |
-| `onlinecoop/campaigns/` | 各战役的行为。 |
-| `onlinecoop/adapters/` | 本地与网络模式接入。 |
-| `onlinecoop/net_*.lua` | 同步、动画回放和客户端显示。 |
-| `onlinecoop/lan/LanTransport.cs` | 局域网传输源码。 |
-| `onlinecoop/tests/` | 大厅与通信助手的专项检查。 |
-| `tools/` | 打包脚本及运行文件清单。 |
-
-使用 Python 3，在仓库根目录执行：
-
-```sh
-python tools/package.py
+```text
+Shotgun King The Final Checkmate/
+└─ mods/
+   └─ onlinecoop/
+      ├─ info.lua
+      ├─ script.lua
+      └─ …
 ```
 
-玩家 ZIP 会生成在 `dist/` 目录。打包脚本使用明确的文件清单，排除测试与运行数据，并拒绝覆盖已有压缩包。
+更新前请备份存档。联机双方应完整更新到同一版本，不要混用不同版本的文件。
 
-在 Windows 上运行附带检查：
+## 与朋友联机
 
-```sh
-python -m pip install -r onlinecoop/tests/requirements.txt
-python onlinecoop/tests/test_game_lobby.py
-python onlinecoop/tests/test_game_broker.py
-```
+通常使用模组文件夹里的 **`Start Online Co-op Multi Core.vbs`** 启动。房主负责黑王，加入者负责黑骑士；房主将连接码发给朋友，双方使用相同战役开始游戏。
 
-通信助手测试会启动临时本机回环连接，并在结束时关闭。上述检查不能替代实际游玩测试。修改玩法时请优先调整共享规则，保持本地与在线模式一致。
+希望从 Steam 直接启动，可运行一次 **`Configure Steam Launch.vbs`** 完成配置。本地合作无需启动联机助手。
 
-## 作者与权利说明
+具体连接步骤、Steam 启动配置和 FRP 设置，请查看[详细说明](onlinecoop/README_zh.md)。
 
-模组作者：**liber H :Aeon**。《Shotgun King: The Final Checkmate》由 **PUNKCAKE Délicieux** 开发。本项目为非官方社区模组，需要原版游戏才能运行。
+## 常见问题
 
-本项目目前未授予统一的开源许可。如需复用或再分发项目代码、素材，请联系作者。第三方内容的权利归属和适用条款保持不变。
+**连接不上怎么办？** 先确认双方版本相同、房主地址可达，以及组网或穿透工具已连接。同一个热点也可能禁止设备互相访问。
+
+**联机画面等待较久怎么办？** 按 **F6** 降低传输帧率上限，或按 **F7** 切换到追帧模式。默认的完整动画模式会优先保留动画，网络较慢时可能需要等待缓冲。
+
+**断线后能继续吗？** 暂不支持自动重连，需要双方重新建立连接。
+
+**启动或游玩时崩溃怎么办？** 可以尝试单核兼容启动文件 **`Start Online Co-op.vbs`**；它是兼容性绕过办法，不保证解决所有崩溃。
+
+模组仍在持续测试，部分画面效果和音效在 2P 端可能与房主不同。遇到问题欢迎[提交反馈](https://github.com/hamster4477/shotgun-king-coop/issues)，说明版本、模式、玩家角色、楼层与发生前的操作，并附截图或相关日志。公开日志前请删除连接码、房间密钥和个人信息。
+
+---
+
+模组作者：**liber H :Aeon**。原作由 **PUNKCAKE Délicieux** 开发。本项目为非官方社区模组。
+
+[开发与源码说明](DEVELOPMENT_zh.md)
