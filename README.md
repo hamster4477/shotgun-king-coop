@@ -57,5 +57,6 @@ The mod is under active testing. Some visual effects and sounds may differ betwe
 ---
 
 Mod author: **liber H :Aeon**. Original game by **PUNKCAKE Délicieux**. This is an unofficial community mod.
+AI tools assisted with programming and debugging this mod.
 
 [Development and source notes](DEVELOPMENT.md)
