@@ -57,5 +57,6 @@ Shotgun King The Final Checkmate/
 ---
 
 模组作者：**liber H :Aeon**。原作由 **PUNKCAKE Délicieux** 开发。本项目为非官方社区模组。
+本模组在编程和调试过程中使用了 AI 辅助工具。
 
 [开发与源码说明](DEVELOPMENT_zh.md)
