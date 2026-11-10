@@ -6,6 +6,27 @@
 -- remain. Reserve one maximum-size image for the real tail on an extreme cap.
 local MAX_FRAMES,MAX_BYTES,MAX_MS,TAIL_BYTES=7200,24000000,120000,60000
 local function send(s) return onlinecoop_lan.send("data",s) end
+-- Keep only three decoded future images, never a decoded copy of a whole
+-- cinematic. Spread allocations over update ticks, including buffering ticks.
+local function predecode(c)
+    local first=(c.index or 0)+1
+    for i=first,min(#c.frames,first+2) do
+        local f=c.frames[i]
+        if f.data and not f.runs then
+            f.runs=onlinecoop_decode_board_pixels(f.data,true)
+            return
+        end
+    end
+end
+local function remember_buffer(n,c)
+    -- A new run has a new net table. Across turns/floors, remember bad jitter
+    -- immediately and recover gradually; tiny clips cannot erase that history.
+    if (c.underruns or 0)>0 then
+        n.clip_buffer_ms=c.buffer_ms
+    elseif c.duration>=500 and #c.frames>=2 and not c.story_seen then
+        n.clip_buffer_ms=max(300,c.observed_buffer_ms or 300,(c.buffer_ms or 300)*.9)
+    end
+end
 -- Frames already arrive while the host is animating. A short reservoir lets
 -- the guest play alongside it instead of waiting for capture AND transfer to
 -- finish. Keep one frame of lookahead so unknown tail timing never unlocks a
@@ -269,7 +290,8 @@ function onlinecoop_playback_receive(payload)
         local a=onlinecoop_net_numbers(sub(payload,4),2,10000000)
         if not a or a[1]~=(n.clip_received or 0)+1 or a[2]>10000 or c then return false end
         n.clip_received=a[1]
-        n.clip_client={id=a[1],floor=a[2],frames={},bytes=0,snapshot=n.snapshot,deferred={}}
+        n.clip_client={id=a[1],floor=a[2],frames={},bytes=0,snapshot=n.snapshot,deferred={},
+            buffer_ms=min(1500,max(300,n.clip_buffer_ms or 300))}
         return true
     elseif tag=="F2," then
         if not c or c.complete or #payload>12130 then return false end
@@ -292,13 +314,15 @@ function onlinecoop_playback_receive(payload)
         local previous=c.frames[#c.frames]
         if previous and c.last_received then
             local jitter=max(0,(time()-c.last_received)*1000-(f.ms-previous.ms))
-            c.buffer_ms=min(1000,max(c.buffer_ms or 300,150+jitter*2))
+            c.observed_buffer_ms=min(1000,max(c.observed_buffer_ms or 300,150+jitter*2))
+            c.buffer_ms=max(c.buffer_ms or 300,c.observed_buffer_ms)
         end
         c.first_received=c.first_received or time(); c.last_received=time()
         c.bytes=c.bytes+#f.data; add(c.frames,f); c.partial=nil
         if #c.frames==1 and sub(f.data,1,4)~="0000"
             and (not n.board_native or n.board_native.floor~=c.floor) then
-            n.board_native={floor=c.floor,turn=f.turn,runs=onlinecoop_decode_board_pixels(f.data,true),received=time()}
+            f.runs=onlinecoop_decode_board_pixels(f.data,true)
+            n.board_native={floor=c.floor,turn=f.turn,runs=f.runs,received=time()}
         end
         return true
     elseif tag=="J2," then
@@ -331,27 +355,32 @@ function onlinecoop_playback_client_tick()
         -- before it still stream. J2 shifts due without replaying that prefix.
         if not c.story_prebuffer then
             c.story_prebuffer=true
+            c.story_seen=true
             c.story_wait_started=time()
             _log("[CLIP STORY BUFFER] id="..c.id.." frame="..((c.index or 0)+1))
         end
         c.buffering=true
+        predecode(c)
         return
     end
     if not c.play_started or c.buffering then
-        if not c.complete and not ready_to_stream(c) then return end
+        if not c.complete and not ready_to_stream(c) then predecode(c); return end
         start_stream(c)
     end
-    if time()+.00001<c.due then return end
+    if time()+.00001<c.due then predecode(c); return end
     local f=c.frames[c.index+1]
     if not c.complete and (not f or not c.frames[c.index+2]) then
         c.buffering=true; c.underruns=(c.underruns or 0)+1
         c.buffer_ms=min(1500,max(500,(c.buffer_ms or 300)*2))
         _log("[CLIP REBUFFER] id="..c.id.." frame="..c.index.." target_ms="..flr(c.buffer_ms))
+        predecode(c)
         return
     end
     if f then
+        local cached=f.runs~=nil
         c.index=c.index+1
-        n.board_native={floor=c.floor,turn=f.turn,runs=onlinecoop_decode_board_pixels(f.data,true),received=time()}
+        n.board_native={floor=c.floor,turn=f.turn,runs=f.runs or onlinecoop_decode_board_pixels(f.data,true),received=time()}
+        f.runs=nil -- the displayed image now owns this table
         f.data=nil -- timing metadata stays dense for validation and lookahead
         -- Keep source timing across normal render-tick quantization. A genuine
         -- local stall shifts the timeline instead of skipping frames to catch up.
@@ -359,9 +388,12 @@ function onlinecoop_playback_client_tick()
         local next_ms=next_frame and next_frame.ms or c.duration
         if time()-c.due>.02 then c.due=time() end
         c.due=c.due+max(0,next_ms-f.ms)/1000
+        -- At most one new decoded image per tick, even on an empty cache.
+        if cached then predecode(c) end
         return
     end
     if not send("U2,"..c.id) then return end
+    remember_buffer(n,c)
     _log("[CLIP PLAYED] id="..c.id.." frames="..c.index.." capped="..tostr(c.capped)
         .." elapsed_ms="..flr((time()-c.play_started)*1000))
     n.clip_client=nil

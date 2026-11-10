@@ -65,6 +65,10 @@ try:
         sides.append(side)
         wait(side, 'ready')
     host, client = sides
+    (client['box'] / 'discover.txt').write_text('ON')
+    time.sleep(3)  # Browsing starts before any host is listening.
+    assert processes[1].poll() is None
+
     request(host, 'host', '256.1.1.1', port)
     wait(host, 'error')
     request(host, 'cancel', '127.0.0.1', port)
@@ -78,6 +82,13 @@ try:
     value = wait(host, 'waiting')
     ip, assigned_port, key = value[3].split(':')
     assert int(assigned_port) != port, 'Occupied port was not skipped'
+    (client['box'] / 'discover.txt').write_text('ON')
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline and value[3] not in read(client['box'] / 'rooms.txt'):
+        time.sleep(.1)
+    assert value[3] in read(client['box'] / 'rooms.txt'), 'Host was not discovered'
+    assert read(host['box'] / 'adapters.txt'), 'Missing adapter names'
+    (client['box'] / 'discover.txt').write_text('OFF')
     request(client, 'client', ip, assigned_port, key)
     wait(host, 'connected')
     wait(client, 'connected')
@@ -86,6 +97,10 @@ try:
     wait(host, 'ready')
     wait(client, 'ready')
     assert read(host['root'] / 'lan/config.txt') == 'OFF'
+    deadline = time.monotonic() + 9
+    while time.monotonic() < deadline and value[3] in read(client['box'] / 'rooms.txt'):
+        time.sleep(.1)
+    assert value[3] not in read(client['box'] / 'rooms.txt'), 'Closed room did not expire'
     request(host, 'host', '127.0.0.1', port)
     new_value = wait(host, 'waiting')
     assert new_value[3] != value[3], 'New room reused the previous key'
@@ -133,7 +148,36 @@ try:
     thread.join(timeout=10)
     assert not thread.is_alive()
     assert not relay_errors, relay_errors
-    result = {'mapped_port_conflict_rejected': True, 'domain_tcp_relay_bidirectional': True, 'invalid_address_rejected': True, 'occupied_port_skipped': True,
+    vacant = socket.socket()
+    vacant.bind(('127.0.0.1', 0))
+    refused_port = vacant.getsockname()[1]
+    vacant.close()
+    request(client, 'client', '127.0.0.1', refused_port, 'a'*32)
+    assert wait(client, 'error')[4] == 'refused'
+    local_ip = [ip for ip in status(host)[2].split(',') if ip != '127.0.0.1'][-1]
+    request(host, 'host', local_ip, port)
+    native_room = wait(host, 'waiting')[3].split(':')
+    request(client, 'client', native_room[0], native_room[1], native_room[2])
+    wait(host, 'connected'); wait(client, 'connected')
+    assert read(host['root'] / 'lan/last-host-adapter.txt'), 'Successful adapter not saved'
+    request(host, 'cancel', '127.0.0.1', port)
+    request(client, 'cancel', '127.0.0.1', port)
+    wait(host, 'ready'); wait(client, 'ready')
+    (host['box'] / 'stop.txt').write_text('stop')
+    processes[0].wait(timeout=10)
+    session = uuid.uuid4().hex
+    log = open(REPORT / 'host-restarted.log', 'w', encoding='utf-8')
+    streams.append(log)
+    proc = subprocess.Popen([
+        'powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File',
+        str(ROOT / 'Lan-GameBroker.ps1'), '-Root', str(host['root']),
+        '-Session', session, '-OwnerPID', str(os.getpid())],
+        stdout=log, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
+    processes.append(proc)
+    restarted = {'root': host['root'], 'box': host['root']/'lan/lobby'/session, 'seq': 0}
+    sides.append(restarted)
+    assert wait(restarted, 'ready')[2].split(',')[0] == local_ip, 'Preferred adapter was not restored'
+    result = {'discovery_and_expiry': True, 'adapter_names_and_memory': True, 'refused_and_retry': True,'mapped_port_conflict_rejected': True, 'domain_tcp_relay_bidirectional': True, 'invalid_address_rejected': True, 'occupied_port_skipped': True,
               'real_handshake': True, 'cancel_clears_config': True,
               'create_after_cancel': True, 'fresh_room_key': True}
     (REPORT / 'results.json').write_text(json.dumps(result, indent=2))

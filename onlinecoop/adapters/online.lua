@@ -42,14 +42,13 @@ coop_controller={
 }
 
 function initialize()
-    for _,entry in ipairs(MODLIST or {}) do
-        if entry.name=="onlinecoop" and entry.lan_lobby and entry.lan_lobby.enter(coop_variant and ("onlinecoop_"..coop_variant) or "onlinecoop") then
-            newbnk(128,64,4)
-            mode.coop_lobby_only=true
-            mode.ranks_index=0;mode.weapons_index=0
-            mode.sel=1;mode.weapon_sel=1;mode.rank_sel=1
-            return
-        end
+    local entry=MODS[MOD]
+    if entry and entry.lan_lobby and entry.lan_lobby.enter(coop_variant and ("onlinecoop_"..coop_variant) or "onlinecoop") then
+        newbnk(128,64,4)
+        mode.coop_lobby_only=true
+        mode.ranks_index=0;mode.weapons_index=0
+        mode.sel=1;mode.weapon_sel=1;mode.rank_sel=1
+        return
     end
     local_initialize()
     onlinecoop_net_initialize()

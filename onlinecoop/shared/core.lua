@@ -1,6 +1,7 @@
 id = "coop"
 coop_controller = nil -- each mode entry starts with local input ownership
 require("shared/actions.lua")
+require("shared/turn_indicator.lua")
 require("shared/royal_cards.lua")
 require("campaigns/story.lua")
 require("campaigns/hidden_endings.lua")
@@ -2697,6 +2698,7 @@ function initialize()
     coop_install_royal_cards()
     coop_load_janissary_art()
     coop_load_cavalier_art()
+    coop_load_turn_indicator()
     -- The mod sandbox cannot access the base game's DEN progress object.
     -- Keep co-op preferences and weapon unlocks in its own save bank.
     newbnk(128, 64, 4)
@@ -2899,7 +2901,9 @@ function initialize()
     -- check_folly_shields still owns charges, overrides and extra-turn safety.
     prepend("check_folly_shields",coop_refresh_king_danger,"coop_fresh_folly_danger")
     mode.coop_duel_draw_charge=coop_duel_draw_charge
-    append("draw_game",coop_duel_draw,"coop_duel_overlay")
+    -- Draw role-specific HUD after the board capture, so the host's Rebel
+    -- Knight label is not baked into the client's Revolutionary Knight view.
+    append("_draw",coop_duel_draw,"coop_duel_overlay")
 
 
     -- Draw the weapon at the Knight's own draw call. The base piece is then
@@ -5550,12 +5554,9 @@ function draw_inter()
     end
     lprint(floor_label, x, board_y-19, 5)
 
-    local active = mode.coop_selected == "knight" and "2P Knight" or "1P King"
-    lprint(active, 10, board_y-19, 5)
-
-    if mode.coop_knight and mode.coop_knight.hp then
-        lprint("Knight HP: " .. mode.coop_knight.hp, 10, board_y+10, 4)
-    end
+    local player=mode.coop_selected=="knight" and 2 or 1
+    if mode.coop_duel then player=mode.coop_duel.input and 2 or 1 end
+    coop_draw_turn_indicator(player,mode.coop_run_active and not mode.coop_native_turn_in_progress)
 
     if not mode.coop_duel and not mode.coop_knight and mode.knight_ever_died then
         lprint("Press R to revive knight (costs 1 soul)", 10, board_y+22, 2)

@@ -1,5 +1,11 @@
 -- Rival Knight: 2P controls a native enemy boss during its alt_move phase.
 COOP_DUEL_ENDINGS={king={32,6,7},knight={33,34,35}}
+-- Perspective is presentation only; keep the same authoritative piece identity.
+function coop_duel_name(revolutionary)
+ if revolutionary==nil then revolutionary=mode and mode.net and mode.net.role=="client" end
+ if current_lang=="simplified_chinese" then return revolutionary and "革命骑士" or "反叛骑士" end
+ return revolutionary and "Revolutionary Knight" or "Rebel Knight"
+end
 function coop_duel_live()
  local d=mode and mode.coop_duel
  return d and not d.finished and d.boss and d.boss.hp>0 and not d.boss.dead and d.boss or nil
@@ -387,7 +393,7 @@ function coop_duel_draw()
  if not e or mode.coop_pause_menu_open or mode.coop_hidden_boss_pending then return end
  local bx,by=coop_get_board_geometry()
  if d.input then
-  lprint(current_lang=="simplified_chinese" and "2P 反叛骑士" or "2P Rebel Knight",bx+64,by-12,5,1)
+  lprint("2P "..coop_duel_name(),bx+64,by-12,5,1)
   local cooldown=max(0,(d.tear_ready or 3)-d.round)
   if cooldown==0 and d.tear_available then
    coop_duel_draw_tear_notice(d,d.round)

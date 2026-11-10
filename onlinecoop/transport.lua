@@ -54,9 +54,7 @@ local function configure(text)
 end
 configure(file("lan/config.txt"))
 -- MODLIST is engine-owned and shared with the separate mode environment.
-for _,entry in ipairs(MODLIST or {}) do
-    if entry.name=="onlinecoop" then entry.lan_transport=onlinecoop_lan end
-end
+if coop_mod_index then MODLIST[coop_mod_index].lan_transport=onlinecoop_lan end
 function onlinecoop_lan.receive()
     if data_head > data_tail then return nil end
     local data = data_queue[data_head]

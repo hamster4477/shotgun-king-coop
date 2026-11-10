@@ -21,10 +21,62 @@ end
 local function net_inside(mx,my,x,y,w,h)
     return mx>=x and mx<x+w and my>=y and my<y+h
 end
+local function net_piece_definition(typ)
+    for _,definition in ipairs(PIECES or {}) do
+        if definition.type==typ then return definition end
+    end
+end
+function onlinecoop_net_piece_name(p)
+    local definition=net_piece_definition(p[4])
+    if definition and definition.name=="rebel_knight" then return coop_duel_name() end
+    return lang["piece_"..p[4]] or net_label("棋子","Piece")
+end
+function onlinecoop_net_own_piece(s)
+    local knight
+    -- The original Knight is retired during the revolution. The new Boss is
+    -- already present in this snapshot; do not consult newer live state.
+    for _,p in ipairs(s.units) do
+        local definition=net_piece_definition(p[4])
+        if definition and definition.name=="rebel_knight" then return p,true end
+        if p[1]==s.knight then knight=p end
+    end
+    return knight,false
+end
+function onlinecoop_net_hover_piece(s,mx,my,left)
+    for _,p in ipairs(s.units) do
+        local definition=net_piece_definition(p[4])
+        local size=(p[4]==6 or (definition and definition.big)) and 32 or 16
+        if net_inside(mx,my,left+p[2]*16,30+p[3]*16,size,size) then return p end
+    end
+end
+function onlinecoop_draw_piece_health(p,cx,y)
+    local maximum=max(1,p and p[9] or 1)
+    local hp=max(0,min(maximum,p and p[6] or 0))
+    spritesheet("gfx")
+    -- Native HUD threshold, heart cells and five-heart rows. Large pools use
+    -- a proportional bar and the native pico-font heart after the HP number.
+    if maximum>10 or (p and p[4]==6) then
+        rectfill(cx-9,y,cx+9,y+6,2)
+        if hp>0 then rectfill(cx-9,y,cx-9+18*hp/maximum,y+6,5) end
+        local previous=font();font("pico")
+        lprint(hp.."&",cx+1,y+1,4,1)
+        font(previous)
+    else
+        local count=0
+        for row=0,ceil(maximum/5)-1 do
+            local width=min(maximum-row*5,5)
+            for col=0,width-1 do
+                sspr(hp>count and 8 or 11,56,3,3,cx+col*4-width*2,y+row*4)
+                count=count+1
+            end
+        end
+    end
+end
 local function draw_draft_shortcuts()
-    -- Keep clear of the ten owned cards on the left (x=8..54, y=14..173).
+    -- The temporary F7 setting uses this same top row.
+    if time()<(mode.net.playback_show_until or 0) then return end
     lprint(net_label("F6：切换帧率 / F7：切换动画模式",
-        "F6: Change FPS / F7: Playback mode"),64,156,3)
+        "F6: Change FPS / F7: Playback mode"),MCW/2,2,3,1)
 end
 function onlinecoop_net_slot_position(index,count)
     local page=mode.net.soul_page or 0
@@ -353,8 +405,7 @@ function onlinecoop_net_draw_client()
     if n.cg_active or n.cg_returned then return end
     if n.role~="client" then
         onlinecoop_draw_draft()
-        if n.draft and n.draft.active then draw_draft_shortcuts() end
-        lprint(onlinecoop_playback_hint() or ("1P / "..connection_label(n)),4,176,4)
+        lprint(onlinecoop_playback_hint() or connection_label(n),4,176,4)
         return
     end
     -- Native mode setup draws HD text onto a separate overlay. Clearing the
@@ -388,7 +439,7 @@ function onlinecoop_net_draw_client()
         local hovered=s and net_card_panels(s,n.mouse_x or 0,n.mouse_y or 0)
         local _,draft_hover=onlinecoop_draw_draft()
         draw_draft_shortcuts()
-        lprint("2P / "..connection_label(n),4,176,4)
+        lprint(connection_label(n),4,176,4)
         n.card_tooltip_pending=draft_hover or hovered
         return
     end
@@ -399,16 +450,14 @@ function onlinecoop_net_draw_client()
     end
     local mx,my=n.mouse_x or 0,n.mouse_y or 0
     local phase=onlinecoop_lan.status=="connected" and s.phase or 7
-    local zh={[0]="等待房主开始",[1]="黑王行动",[2]="黑骑士行动",[3]="行动结算中",[4]="房主正在结算楼层",[5]="对局结束",[6]="房主已暂停",[7]="连接中断，请双方重启",[8]="正在核对版本"}
-    local en={[0]="Waiting for host",[1]="King's action",[2]="Knight's action",[3]="Resolving",[4]="Host resolving floor",[5]="Game over",[6]="Host paused",[7]="Disconnected: restart both",[8]="Checking version"}
-    lprint("2P / "..net_label(zh[phase],en[phase]),8,3,phase==2 and 5 or 3)
+    local own_piece,duel=onlinecoop_net_own_piece(s)
+    local player=phase==1 and 1 or phase==2 and 2 or nil
+    if n.remote_choices and not onlinecoop_playback_busy() then player=2 end
+    coop_draw_turn_indicator(player,player~=nil)
     local left=(MCW-128)/2
     local hovered_card=net_card_panels(s,mx,my)
     local can_input=phase==2 and not n.pending and not onlinecoop_playback_busy() and not onlinecoop_events_busy() and not (n.await_revision and n.revision<=n.await_revision)
-    local hover_piece
-    for _,p in ipairs(s.units) do
-        if net_inside(mx,my,left+p[2]*16,30+p[3]*16,16,16) and p[1]~=s.knight then hover_piece=p end
-    end
+    local hover_piece=onlinecoop_net_hover_piece(s,mx,my,left)
     if not onlinecoop_has_board_frame(s) then
     local moat={}
     for _,p in ipairs(s.terrain) do
@@ -465,7 +514,6 @@ function onlinecoop_net_draw_client()
         onlinecoop_draw_net_piece(p,x,y,s,flash)
         if p[1]==s.king and sin(gun_angle)>=0 then clip(left,26,128,132); net_king_gun(x,y,s) end
         end
-        if net_inside(mx,my,left+p[2]*16,30+p[3]*16,16,16) and p[1]~=s.knight then hover_piece=p end
     end
     onlinecoop_draw_boss(s,left)
     net_draw_events(s,left)
@@ -479,7 +527,9 @@ function onlinecoop_net_draw_client()
     lprint(net_label("火力","Power"),left-23,56,2,1); lprint(ui[4]-1000,left-23,65,3,1)
     lprint(net_label("射程","Range"),left-23,81,2,1); lprint((ui[6]-1000).."-"..(ui[6]-998),left-23,90,3,1)
     lprint(net_label("散射","Spread"),left-23,106,2,1); lprint(ui[5],left-23,115,3,1)
-    lprint(net_label("骑士刀锋","Knight blade"),left-23,131,2,1); lprint(ui[8],left-23,140,3,1)
+    if not duel then
+        lprint(net_label("骑士刀锋","Knight blade"),left-23,124,2,1); lprint(ui[8],left-23,133,3,1)
+    end
     end
     for i=1,min(12,ui[2]) do
         rectfill(left+(i-1)*4,18,left+(i-1)*4+2,25,i<=ui[1] and 5 or 2)
@@ -498,11 +548,17 @@ function onlinecoop_net_draw_client()
     spritesheet("weapons"); sspr(96,ui[17]*16,24,8,left+14,18); spritesheet("gfx")
     if hover_piece then
         rectfill(left-39,47,left-3,149,1)
-        lprint(lang["piece_"..hover_piece[4]] or net_label("棋子","Piece"),left-21,51,4,1)
+        lprint(onlinecoop_net_piece_name(hover_piece),left-21,51,4,1)
         onlinecoop_draw_net_piece(hover_piece,left-29,65,s)
-        lprint(net_label("血量 ","HP ")..hover_piece[6].."/"..hover_piece[9],left-21,88,5,1)
+        onlinecoop_draw_piece_health(hover_piece,left-21,88)
         lprint(net_label("等待 ","Wait ")..hover_piece[8],left-21,103,3,1)
         if hover_piece[7]==1 then lprint(net_label("准备行动","Ready"),left-21,117,5,1) end
+    end
+    -- Only the revolutionary Boss needs persistent personal HP. The ordinary
+    -- one-heart Knight keeps its health in the hover panel.
+    if duel then
+        lprint(net_label("自身血量","Your HP"),left-21,142,3,1)
+        onlinecoop_draw_piece_health(own_piece,left-21,152)
     end
     local hover_soul
     for _,slot in ipairs(s.souls) do
@@ -560,7 +616,7 @@ function onlinecoop_net_draw_client()
         elseif hover_soul[3]==1 and phase==2 then hint=hint..net_label("：选择后点击目标格"," : select, then choose target") end
     elseif hovered_card then hint=lang[hovered_card.id] or hovered_card.id
     elseif hover_piece then
-        hint=(lang["piece_"..hover_piece[4]] or net_label("棋子","Piece"))..net_label("  血量 ","  HP ")..hover_piece[6].."/"..hover_piece[9].."  "..net_label("等待 ","Wait ")..hover_piece[8]
+        hint=onlinecoop_net_piece_name(hover_piece).."  "..net_label("等待 ","Wait ")..hover_piece[8]
     elseif ui[11]>0 then hint=net_label("点击目标格确认，右键取消","Click a target to confirm; right click cancels") end
     lprint(onlinecoop_signals_hint() or hint,MCW/2,174,4,1)
     n.card_tooltip_pending=hovered_card

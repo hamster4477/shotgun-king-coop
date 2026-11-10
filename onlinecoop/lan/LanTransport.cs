@@ -474,6 +474,7 @@ public static class OnlineCoopLan {
                 return 0;
             } catch (Exception ex) {
                 string detail = ex.GetType().Name + ": " + ex.Message
+                    + (ex is SocketException ? " socket_error=" + ((SocketException)ex).NativeErrorCode : "")
                     + " sent=" + sent + " received=" + received + " consumed=" + consumed
                     + " pending_bytes=" + (writing == null ? 0 : writing.Bytes.Length)
                     + " partial_receive_bytes=" + partialBytes

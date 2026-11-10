@@ -6,7 +6,7 @@ One player brings the shotgun. The other brings the Knight's blade.
 
 A two-player co-op mod for **Shotgun King: The Final Checkmate**. Play as the Black King and Black Knight, cover each other, and fight through **Throne, Endless, and Charnier** together. Supports local co-op and LAN play, with additional cards and combat mechanics built around cooperation.
 
-**[Download the mod](https://github.com/hamster4477/shotgun-king-coop/releases)** · [Installation and connection guide](onlinecoop/README.md) · [Report a problem](https://github.com/hamster4477/shotgun-king-coop/issues)
+**[Subscribe on Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3833493529)** · **[Download the mod](https://github.com/hamster4477/shotgun-king-coop/releases)** · [Installation and connection guide](onlinecoop/README.md) · [Report a problem](https://github.com/hamster4477/shotgun-king-coop/issues)
 
 ## Before downloading
 
@@ -16,6 +16,8 @@ A two-player co-op mod for **Shotgun King: The Final Checkmate**. Play as the Bl
 - Supports English and Simplified Chinese.
 
 ## Installation
+
+For a Workshop installation, subscribe using the link above and follow the [Workshop setup steps](onlinecoop/README.md#steam-workshop-installation). For a manual ZIP installation:
 
 1. Download the mod release ZIP from **Assets** on the download page. Choose the mod attachment, rather than GitHub's automatically generated **Source code** archives.
 2. Fully exit the game and extract the `onlinecoop` folder into the game's `mods` folder.
@@ -54,9 +56,10 @@ See the [detailed guide](onlinecoop/README.md) for connection instructions, Stea
 
 The mod is under active testing. Some visual effects and sounds may differ between the host and 2P. Please [report problems](https://github.com/hamster4477/shotgun-king-coop/issues) with the version, campaign, player role, floor, and actions leading up to the issue. Screenshots or relevant logs help; remove invite codes, room keys, and personal information before posting logs publicly.
 
+For private feedback, email [hamster4477@qq.com](mailto:hamster4477@qq.com).
+
 ---
 
 Mod author: **liber H :Aeon**. Original game by **PUNKCAKE Délicieux**. This is an unofficial community mod.
-AI tools assisted with programming and debugging this mod.
 
 [Development and source notes](DEVELOPMENT.md)

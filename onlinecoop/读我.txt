@@ -1,3 +1,6 @@
+工坊订阅地址：https://steamcommunity.com/sharedfiles/filedetails/?id=3833493529
+订阅版在游戏所在 Steam 库中的目录：steamapps\workshop\content\1972440\3833493529\
+
 本文件只教如何快速配置联机模组可以steam启动，更多详细信息看README_zh.md
 从onlinecoop文件夹里找“点击下方脚本配置Steam启动”如何点他下面的脚本“Configure Steam Launch.vbs”
 配置完成自动重启steam然后就可以从steam里启动联机模组

@@ -27,16 +27,41 @@ function Write-Atomic([string]$Path,[string]$Text) {
     }
 }
 $addresses=@()
+$adapters=@{}
+$broadcasts=@('127.0.0.1','255.255.255.255')
+$savedAdapter=Read-Shared (Join-Path $Root 'lan/last-host-adapter.txt')
+$preferred=$null
 foreach($nic in [Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces()) {
     if($nic.OperationalStatus -ne 'Up'){continue}
     foreach($a in $nic.GetIPProperties().UnicastAddresses) {
         if($a.Address.AddressFamily -eq 'InterNetwork') {
             $ip=$a.Address.ToString()
-            if($ip -ne '127.0.0.1' -and !$ip.StartsWith('169.254.') -and $addresses -notcontains $ip){$addresses+=$ip}
+            if($ip -ne '127.0.0.1' -and !$ip.StartsWith('169.254.') -and $addresses -notcontains $ip){
+                $addresses+=$ip
+                $name=$nic.Name -replace '[|\r\n\x00-\x1f]',' '
+                if($name.Length -gt 20){$name=$name.Substring(0,20)}
+                $adapters[$ip]=@{Id=$nic.Id; Name=$name}
+                if($nic.Id -eq $savedAdapter.Trim()){$preferred=$ip}
+                if($a.IPv4Mask){
+                    $bytes=$a.Address.GetAddressBytes(); $mask=$a.IPv4Mask.GetAddressBytes()
+                    for($i=0;$i -lt 4;$i++){$bytes[$i]=$bytes[$i] -bor (255 -bxor $mask[$i])}
+                    $broadcasts+=([Net.IPAddress]::new($bytes)).ToString()
+                }
+            }
         }
     }
 }
+if($preferred){$addresses=@($preferred)+@($addresses | Where-Object {$_ -ne $preferred})}
 $addresses+='127.0.0.1'
+$adapterLines=@($addresses | ForEach-Object {if($adapters.ContainsKey($_)){$_+'|'+$adapters[$_].Name}})
+Write-Atomic (Join-Path $box 'adapters.txt') ($adapterLines -join "`n")
+$discovery=$null
+try {
+    Add-Type -Path (Join-Path $PSScriptRoot 'lan/LanDiscovery.cs')
+    $discovery=[OnlineCoopDiscovery]::new([string[]]@($broadcasts | Select-Object -Unique))
+} catch { Write-Warning 'LAN discovery unavailable; invitation codes remain available.' }
+Write-Atomic (Join-Path $box 'rooms.txt') ''
+$lastRooms=''; $remembered=$false; $mapped=$false; $role=''
 $script:bridge=$null; $script:bridgeBox=$null
 $state='ready'; $invite='-'; $errorCode='none'; $lastStatus=''; $sequence=0; $bridgeDue=$null
 function Stop-OwnedBridge {
@@ -84,7 +109,7 @@ try {
                         }
                         if(!$found){throw 'port'}
                     } elseif($key -notmatch '^[a-fA-F0-9]{32}$') { throw 'invite' }
-                    $state='starting'; $errorCode='none'; $invite='-'
+                    $state='starting'; $errorCode='none'; $invite='-'; $remembered=$false
                         Start-OwnedBridge $role $ep.Address $ep.Port $key
                         $invite=$ep.Address+':'+$ep.Port+':'+$key.ToLowerInvariant()
                 }
@@ -104,6 +129,10 @@ try {
                 if($status -match '^OC1\|[a-f0-9]{32}\|(waiting|connected|error|stopped)\|END$') {
                     $state=$Matches[1]
                     if($state -eq 'error'){$errorCode='connect'}
+                    if($state -eq 'connected' -and $role -eq 'host' -and !$mapped -and !$remembered -and $adapters.ContainsKey($ep.Address)){
+                        Write-Atomic (Join-Path $Root 'lan/last-host-adapter.txt') $adapters[$ep.Address].Id
+                        $remembered=$true
+                    }
                 }
             }
             if($script:bridge.HasExited -or ($state -eq 'starting' -and [DateTime]::UtcNow -gt $bridgeDue)) {
@@ -111,11 +140,31 @@ try {
             }
         }
         if($script:bridge -and $state -in @('error','stopped')) {
+            $detail=Read-Shared (Join-Path $box ('bridge-'+$sequence+'-error.log'))
+            if($script:bridgeBox){$detail+=(Read-Shared (Join-Path $script:bridgeBox 'error.txt'))}
+            if($detail -match '10013'){$errorCode='denied'}
+            elseif($detail -match '10061|actively refused'){$errorCode='refused'}
+            elseif($detail -match 'Room key, role or protocol mismatch'){$errorCode='mismatch'}
+            elseif($detail -match 'Connection timeout|10060'){$errorCode='timeout'}
+            elseif($detail -match 'No such host|11001|11004'){$errorCode='dns'}
+            elseif($detail -match 'Heartbeat timeout|Peer disconnected'){$errorCode='disconnected'}
+            elseif($detail -match 'Handshake timeout'){$errorCode='handshake'}
             Stop-OwnedBridge; Write-Atomic (Join-Path $Root 'lan/config.txt') 'OFF'; $invite='-'
+        }
+        if($discovery){
+            $advertise=if($role -eq 'host' -and !$mapped -and $state -eq 'waiting'){$invite}else{''}
+            try {
+                $rooms=$discovery.Poll($advertise,((Read-Shared (Join-Path $box 'discover.txt')) -eq 'ON'))
+                if($rooms -ne $lastRooms){Write-Atomic (Join-Path $box 'rooms.txt') $rooms; $lastRooms=$rooms}
+            } catch {
+                $discovery.Dispose(); $discovery=$null
+                Write-Atomic (Join-Path $box 'rooms.txt') ''
+                Write-Warning 'LAN discovery stopped; invitation codes remain available.'
+            }
         }
         $beat=[Math]::Floor(([DateTime]::UtcNow-[DateTime]'2020-01-01').TotalSeconds)
         $value='LB1|'+$state+'|'+($addresses -join ',')+'|'+$invite+'|'+$errorCode+'|'+$sequence+'|'+$beat+'|END'
         if($value -ne $lastStatus){Write-Atomic (Join-Path $box 'status.txt') $value; $lastStatus=$value}
         Start-Sleep -Milliseconds 100
     }
-} finally { Stop-OwnedBridge }
+} finally { Stop-OwnedBridge; if($discovery){$discovery.Dispose()} }

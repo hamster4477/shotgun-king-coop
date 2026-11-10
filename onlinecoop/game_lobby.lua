@@ -30,8 +30,15 @@ local function public_endpoint(text)
     end
     return host,port
 end
+ui.rooms={}; ui.visible_rooms={}; ui.adapters={}; ui.room_page=0
+local function browsing(enabled)
+    ui.nearby=enabled; ui.focus=nil; ui.message=""; ui.visible_rooms={}
+    if base then file(base.."discover.txt",enabled and "ON" or "OFF") end
+end
 local function request(role,ip,port,key)
     if not base then return end
+    browsing(false)
+    if role~="cancel" then ui.last_request={role,ip,port,key} end
     ui.seq=ui.seq+1
     file(base.."request-"..ui.seq..".txt","LB1|"..ui.seq.."|"..role.."|"..ip.."|"..port.."|"..key.."|END")
     ui.state="starting"; ui.message=""; ui.requesting=true
@@ -62,6 +69,7 @@ local function setup()
 end
 local function live() return ui.alive and time()<ui.alive end
 local function close_lobby()
+    browsing(false)
     if ui.owned and base then request("cancel","127.0.0.1",27841,"-") end
     ui.open=false; ui.focus=nil; ui.entering=false; ui.settings=false
     catchtxt(); btnclr()
@@ -81,12 +89,21 @@ local function enter(entry)
     _log("[ONLINE LOBBY] opened from mode menu")
     return true
 end
-for _,entry in ipairs(MODLIST or {}) do
-    if entry.name=="onlinecoop" then entry.lan_lobby={enter=enter} end
-end
+if coop_mod_index then MODLIST[coop_mod_index].lan_lobby={enter=enter} end
 append("init_menu",function() close_lobby(); setup() end,"online_lobby_controls")
 local function focus(field)
     ui.focus=field; ui.cursor=#ui[field]; ui.blink=time(); catchtxt()
+end
+local repeat_keys={lobby_back=true,lobby_delete=true,lobby_left=true,lobby_right=true}
+local function consume_input()
+    if not ui.focus then btnclr(); return end
+    -- Global btnclr suppresses held keys until release, including key repeat.
+    -- Consume game controls while retaining the four editing keys.
+    for player=0,1 do
+        for name in string.gmatch(controls(nil,player) or "","(%S+)%s*>") do
+            if player~=0 or not repeat_keys[name] then btnclr(name,player) end
+        end
+    end
 end
 local function edit_input(text)
     local field=ui.focus
@@ -102,12 +119,12 @@ local function edit_input(text)
             ui.blink=time()
         end
     end
-    if btnp("lobby_back",0) and cursor>0 then
+    if btnp("lobby_back",0,.4,.05) and cursor>0 then
         value=sub(value,1,cursor-1)..sub(value,cursor+1); cursor=cursor-1; ui.blink=time()
-    elseif btnp("lobby_delete",0) then
+    elseif btnp("lobby_delete",0,.4,.05) then
         value=sub(value,1,cursor)..sub(value,cursor+2); ui.blink=time()
-    elseif btnp("lobby_left",0) then cursor=max(0,cursor-1); ui.blink=time()
-    elseif btnp("lobby_right",0) then cursor=min(#value,cursor+1); ui.blink=time()
+    elseif btnp("lobby_left",0,.4,.05) then cursor=max(0,cursor-1); ui.blink=time()
+    elseif btnp("lobby_right",0,.4,.05) then cursor=min(#value,cursor+1); ui.blink=time()
     elseif btnp("lobby_home",0) then cursor=0; ui.blink=time()
     elseif btnp("lobby_end",0) then cursor=#value; ui.blink=time() end
     ui[field]=value; ui.cursor=cursor
@@ -125,6 +142,15 @@ prepend("_update",function()
             ui.beat=beat
             if not ui.requesting or tonum(seq)>=ui.seq then ui.state=state; ui.requesting=false end
             ui.seq=max(ui.seq,tonum(seq)); ui.addresses=split(addresses); ui.invite=invite; ui.error=err
+            ui.adapters={}
+            for ip,name in string.gmatch(file(base.."adapters.txt") or "","([0-9.]+)|([^\n]+)") do ui.adapters[ip]=name end
+            ui.rooms={}
+            for ip,port,key,name in string.gmatch(file(base.."rooms.txt") or "","([0-9.]+):(%d+):([a-f0-9]+)|([A-Za-z0-9 _-]+)") do
+                if #key==32 and public_endpoint(ip..":"..port) and #ui.rooms<32 then
+                    ui.rooms[#ui.rooms+1]={name=name,address=ip..":"..port,invite="SKCOOP1|"..ip..":"..port.."|"..key}
+                end
+            end
+            ui.room_page=min(ui.room_page,max(0,math.ceil(#ui.rooms/5)-1))
         end
     end
     if not ui.open then return end
@@ -133,12 +159,27 @@ prepend("_update",function()
     if available and ui.state=="connected" and onlinecoop_lan.status=="connected" then
         ui.open=false; ui.entering=true; ui.focus=nil; catchtxt(); btnclr()
         _log("[ONLINE LOBBY] enter role="..onlinecoop_lan.role)
-        for i,entry in ipairs(MODLIST or {}) do
-            if entry.name=="onlinecoop" then set_mode(i..". "..(ui.entry or "onlinecoop")); break end
-        end
+        if coop_mod_index then set_mode(coop_mod_index..". "..(ui.entry or "onlinecoop")) end
         return
     end
     local ready=ui.state=="ready" or ui.state=="error" or ui.state=="stopped"
+    if ui.nearby then
+        catchtxt()
+        local left=MCW/2-132
+        if btnp("lobby_escape",0) then browsing(false)
+        elseif btnp("lobby_click",0) then
+            if inside(left,158,88,18) then browsing(false)
+            elseif inside(left,137,80,17) then ui.room_page=max(0,ui.room_page-1)
+            elseif inside(left+184,137,80,17) then ui.room_page=min(max(0,math.ceil(#ui.rooms/5)-1),ui.room_page+1)
+            elseif available and ready then
+                for row=1,5 do
+                    local room=ui.visible_rooms[row]
+                    if room and inside(left,28+(row-1)*21,264,19) then join_room(room.invite); break end
+                end
+            end
+        end
+        btnclr(); return
+    end
     local text=catchtxt()
     if ready or (ui.state=="waiting" and ui.focus=="external") then edit_input(text) end
     if ui.settings then
@@ -160,14 +201,15 @@ prepend("_update",function()
 
             else ui.focus=nil end
         end
-        btnclr(); return
+        consume_input(); return
     end
     if available and ready and ui.focus=="text" and btnp("lobby_enter",0) then join_room(ui.text) end
     if btnp("lobby_escape",0) then
         leave(); return
     elseif btnp("lobby_click",0) then
         local left=MCW/2-132
-        if inside(left,148,88,18) then leave(); return
+        if inside(left+198,6,66,18) and ready then browsing(true); ui.room_page=0
+        elseif inside(left,148,88,18) then leave(); return
         elseif inside(left+100,148,164,18) then ui.settings=true; ui.focus=nil; ui.message=""
         elseif inside(left,31,124,23) and available and ready then
             local port=tonum(ui.port)
@@ -194,10 +236,13 @@ prepend("_update",function()
                 else ui.message=label("请填写有效的对外地址:端口","Enter a valid public hostname:port") end
             end
             if ip then clipboard("SKCOOP1|"..ip..":"..port.."|"..key); ui.message=label("连接码已复制，发给朋友即可","Invite copied: send it to your friend") end
-        elseif inside(left+140,108,124,20) and available then request("cancel","127.0.0.1",27841,"-")
+        elseif inside(left+140,108,124,20) and available then
+            if ready and ui.last_request then
+                local r=ui.last_request; ui.hosting=r[1]~="client"; request(r[1],r[2],r[3],r[4])
+            else request("cancel","127.0.0.1",27841,"-") end
         else ui.focus=nil end
     end
-    btnclr()
+    consume_input()
 end,"online_lobby_input")
 local function field(name,x,y,w,limit,placeholder)
     local selected=ui.focus==name
@@ -222,6 +267,25 @@ append("_draw",function()
     if overlay=="hdtext" and srfname(overlay) then local previous=srfname(); target(overlay); cls(255); target(previous) end
     clip(); pal(); rectfill(0,0,MCW,240,1)
     local left=MCW/2-132
+    if ui.nearby then
+        lprint(label("附近房间","Nearby rooms"),MCW/2,6,4,1)
+        ui.visible_rooms={}
+        for row=1,5 do
+            local room=ui.rooms[ui.room_page*5+row]
+            ui.visible_rooms[row]=room
+            if room then button(room.name.."  "..room.address,left,28+(row-1)*21,264,19) end
+        end
+        if #ui.rooms==0 then
+            lprint(label("正在寻找房间，请朋友先创建","Searching: ask your friend to create a room"),MCW/2,55,3,1)
+            lprint(label("找不到时可返回，用连接码加入","If none appear, go back and use an invite"),MCW/2,72,3,1)
+        end
+        button(label("上一页","Previous"),left,137,80,17)
+        lprint((ui.room_page+1).."/"..max(1,math.ceil(#ui.rooms/5)),MCW/2,142,3,1)
+        button(label("下一页","Next"),left+184,137,80,17)
+        button(label("返回","Back"),left,158,88,18)
+        lprint(label("双方需选同一模式","Use the same game mode"),left+94,164,3)
+        return
+    end
     if ui.settings then
         lprint(label("内网穿透 / 端口映射","TCP tunnel / port forwarding"),MCW/2,10,4,1)
         lprint(label("仅房主需要；先在穿透工具中建立 TCP 隧道","Host only: configure a TCP tunnel in your tool first"),MCW/2,26,3,1)
@@ -230,7 +294,7 @@ append("_draw",function()
         field("external",left,92,194,45,label("对外域名或 IP:端口","Public hostname or IP:port"))
         button(label("粘贴","Paste"),left+200,92,64,17)
         lprint(label("开启后填写对外地址，返回大厅创建房间并复制连接码","Enable, enter public address; return to create / copy invite"),MCW/2,118,3,1)
-        if ui.state=="waiting" then
+        if ui.state=="waiting" and ui.hosting then
             lprint(label("房间已创建；开关需取消连接后修改","Room active: cancel connection to change the switch"),MCW/2,131,3,1)
         else lprint(ui.message,MCW/2,131,4,1) end
         button(label("返回大厅","Back to lobby"),MCW/2-44,150,88,18)
@@ -239,19 +303,38 @@ append("_draw",function()
     local title=ui.entry=="onlinecoop_endless" and label("局域网无尽","LAN Endless")
         or ui.entry=="onlinecoop_charnier" and label("局域网剿灭","LAN Charnier")
         or label("局域网合作","Online Co-op")
-    lprint(title,MCW/2,10,4,1)
+    lprint(title,MCW/2-35,10,4,1)
+    button(label("附近房间","Nearby"),left+198,6,66,18)
     button(label("创建房间","Create room"),left,31,124,23)
     button(label("加入","Join"),left+140,31,124,23)
     lprint(label("本地：","Local: ")..(ui.addresses[ui.address] or "...").." >",left,64,3)
+    local address=ui.addresses[ui.address]
+    lprint(ui.adapters[address] or (address=="127.0.0.1" and label("仅本机","This PC only") or ""),left,74,3)
     lprint(label("端口","Port"),left+199,64,3)
     field("port",left+226,60,38,5)
     field("text",left,82,194,45,label("输入或粘贴连接码，再点击加入","Enter / paste invite, then Join"))
     button(label("粘贴","Paste"),left+200,82,64,16)
     button(label("复制连接码","Copy invite"),left,108,124,20)
-    button(label("取消连接","Cancel"),left+140,108,124,20)
-    local states={ready=label("创建房间，或粘贴连接码后点击加入","Create a room, or paste an invite then Join"),starting=label("正在连接……","Connecting..."),waiting=label("房间已创建，等待朋友加入","Room created: waiting for friend"),connected=label("已连接，正在进入准备界面","Connected: opening setup"),error=label("连接失败，请核对地址、组网和防火墙后重试","Connection failed: check address / network / firewall"),stopped=label("已断开，可重新创建或加入","Disconnected: create or join again")}
+    local retry=(ui.state=="error" or ui.state=="stopped" or ui.state=="ready") and ui.last_request
+    button(retry and label("重试","Retry") or label("取消连接","Cancel"),left+140,108,124,20)
+    local states={ready=label("创建房间，或粘贴连接码后点击加入","Create a room, or paste an invite then Join"),starting=label("正在连接……","Connecting..."),waiting=ui.hosting and label("房间已创建，等待朋友加入","Room created: waiting for friend") or label("正在连接房主……","Connecting to host..."),connected=label("已连接，正在进入准备界面","Connected: opening setup"),error=label("连接失败，请核对地址、组网和防火墙后重试","Connection failed: check address / network / firewall"),stopped=label("已断开，可重新创建或加入","Disconnected: create or join again")}
     local message=ui.message~="" and ui.message or states[ui.state] or ui.state
-    if ui.state=="error" and ui.error=="port" then message=label("本地端口占用，请修改并同步隧道设置","Port busy: change local and tunnel settings") end
+    if ui.state=="error" then
+        local errors={
+            port=label("端口占用，请修改本地和隧道端口","Port busy: change local / tunnel port"),
+            address=label("网卡地址失效，请重新选择","Adapter unavailable: select another address"),
+            invite=label("连接码无效，请向房主重新获取","Invalid invite: ask host for a new code"),
+            denied=label("系统阻止连接，请检查防火墙或安全软件","Connection blocked: check firewall / security software"),
+            refused=label("连接被拒绝，请房主确认房间已创建","Refused: ask host to check the room is open"),
+            timeout=label("连接超时，请检查组网、地址和防火墙","Timed out: check network / address / firewall"),
+            mismatch=label("密钥或协议不符，请更新并获取新连接码","Key / protocol mismatch: update and get a new invite"),
+            dns=label("域名无法解析，请检查穿透地址","Cannot resolve hostname: check tunnel address"),
+            disconnected=label("对方已断开，请双方重新创建和加入","Peer disconnected: create and join a new room"),
+            handshake=label("握手超时，请核对端口和双方助手","Handshake timed out: check port and both helpers"),
+            busy=label("连接仍在运行，请先取消","Connection still active: cancel first")
+        }
+        message=errors[ui.error] or message
+    end
     if not live() then message=label("助手未启动，请通过联机启动器运行","Use an Online Co-op launcher to enable networking") end
     lprint(message,MCW/2,136,4,1)
     button(label("返回","Back"),left,148,88,18)

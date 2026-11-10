@@ -6,7 +6,7 @@
 
 这是《**Shotgun King: The Final Checkmate／霰弹国王**》的双人合作模组。与朋友分别操控黑王和黑骑士，相互掩护、配合击杀，一起挑战王座、无尽与剿灭模式。支持本地合作与局域网联机，并加入围绕双人配合设计的新卡牌和战斗机制。
 
-**[下载模组](https://github.com/hamster4477/shotgun-king-coop/releases)** · [详细安装与联机说明](onlinecoop/README_zh.md) · [反馈问题](https://github.com/hamster4477/shotgun-king-coop/issues)
+**[在 Steam 创意工坊订阅](https://steamcommunity.com/sharedfiles/filedetails/?id=3833493529)** · **[下载模组](https://github.com/hamster4477/shotgun-king-coop/releases)** · [详细安装与联机说明](onlinecoop/README_zh.md) · [反馈问题](https://github.com/hamster4477/shotgun-king-coop/issues)
 
 ## 下载前
 
@@ -16,6 +16,8 @@
 - 支持简体中文和英文。
 
 ## 安装
+
+订阅安装请使用上方工坊链接，再按[工坊安装步骤](onlinecoop/README_zh.md#steam-创意工坊安装)配置。手动安装 ZIP 的步骤如下：
 
 1. 从下载页的 **Assets** 中下载模组发行 ZIP，选择模组附件，而不是 GitHub 自动生成的 **Source code** 源码压缩包。
 2. 完全退出游戏，将压缩包内的 `onlinecoop` 文件夹放入游戏安装目录的 `mods` 文件夹。
@@ -54,9 +56,10 @@ Shotgun King The Final Checkmate/
 
 模组仍在持续测试，部分画面效果和音效在 2P 端可能与房主不同。遇到问题欢迎[提交反馈](https://github.com/hamster4477/shotgun-king-coop/issues)，说明版本、模式、玩家角色、楼层与发生前的操作，并附截图或相关日志。公开日志前请删除连接码、房间密钥和个人信息。
 
+如果希望私下反馈，也可以发邮件到 [hamster4477@qq.com](mailto:hamster4477@qq.com)。
+
 ---
 
 模组作者：**liber H :Aeon**。原作由 **PUNKCAKE Délicieux** 开发。本项目为非官方社区模组。
-本模组在编程和调试过程中使用了 AI 辅助工具。
 
 [开发与源码说明](DEVELOPMENT_zh.md)

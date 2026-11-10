@@ -35,10 +35,10 @@ The VBS launchers temporarily enable only onlinecoop and restore the previous mo
 
 ### Steam Workshop installation
 
-Workshop-folder support is included. After subscribing and letting Steam finish downloading, open the corresponding Steam library's:
+[Subscribe on Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3833493529). When the download finishes, open this folder in the Steam library where Shotgun King is installed:
 
 ```text
-steamapps\workshop\content\1972440\<this Workshop item's ID>\
+steamapps\workshop\content\1972440\3833493529\
 ```
 
 Double-click **Configure Steam Launch.vbs** there, select your account and **Apply and restart Steam**. Multi-core is the default; select single-core compatibility if needed. Then launch from Steam, or use either Online Co-op VBS directly inside the Workshop item folder. Subscribing does not execute the setup script automatically: configure it once manually.
@@ -52,6 +52,12 @@ Developer checks cover simulated Workshop paths, separate Steam libraries, numer
 For publishing, select a clean content folder containing `info.lua` and `script.lua` directly. Do not upload its outer folder, the ZIP itself, or the development directory's old archives, logs and test runs.
 
 ## 2. Create or join a room
+
+On the same LAN, click **Nearby** at the top right of the lobby, wait for your friend to create a room, then click their computer name and address to join. Both players must select the same game mode. The list refreshes automatically; closed rooms expire after about six seconds. Discovery uses UDP port 27842. If a hotspot, firewall, or virtual LAN blocks discovery broadcasts, use an invitation code.
+
+The lobby shows the selected network adapter's name. After a successful connection, the host's adapter is remembered and preferred on the next launch if still available. Connection failures show a more specific reason and a **Retry** button. Ask for a new invitation if the host recreates the room. Hold Backspace or Delete to erase continuously, or hold Left/Right to move the caret.
+
+
 
 1. Both players select the same **Play → LAN Co-op / LAN Endless / LAN Charnier** entry.
 2. The host clicks **Create room → Copy invite** and sends the complete invite to their friend.
@@ -153,6 +159,8 @@ New games default to **complete-animation mode**. Either player presses **F7** t
 Board frames use lossless inter-frame compression: repeated pixels are referenced rather than retransmitted, with no resolution or palette reduction. Unchanged live frames and redundant Boss visual updates are suppressed. Receive-window flow control pauses sending while a peer is loading or temporarily not consuming messages, rather than overflowing its queue. These changes reduce traffic and uneven delivery; they cannot remove physical latency, long connection stalls or insufficient bandwidth.
 
 Complete-animation records use bounded batches to reduce local file and socket overhead. Interactive commands flush any preceding batch immediately; the helper does not wait to fill a batch. Playback keeps the captured frame order and timing. Slow links may need to buffer before playback rather than repeatedly stall mid-action.
+
+Complete mode carries buffering adjustments from earlier actions across turns and floors, gradually reducing the buffer when the connection stabilizes. The client decodes a small number of upcoming frames in advance to reduce decoding work at presentation time. Playback may start later on an unstable link, but received animation frames are not skipped to catch up.
 
 Hidden-Boss transformations, book pickup and ending departures remain in the complete-action channel even while normal turns are paused. These story segments capture the full canvas, including side-card effects, the top of the screen, dialogue and native palette flashes. Complete mode buffers a story clip fully before showing its first story frame, avoiding network underruns midway through a transformation. Ordinary combat retains the narrow board capture and progressive playback. Modal choices become usable after their preceding clip has played.
 

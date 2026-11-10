@@ -232,7 +232,7 @@ function onlinecoop_draw_draft()
     local hovered
     local mx,my=n.mouse_x or 0,n.mouse_y or 0
     local ready=onlinecoop_lan.status=="connected" and n.peer_ok
-    lprint(scene_text("选择建议，由黑王确认","Suggest a pair; King confirms"),MCW/2,10,4,1)
+    lprint(scene_text("选择建议，由黑王确认","Suggest a pair; King confirms"),MCW/2,16,4,1)
     for row=1,2 do
         local x,y,w,h=onlinecoop_draft_bounds(row)
         local t=min(1,max(0,(time()-d.started-(row-1)*.08)/.3))

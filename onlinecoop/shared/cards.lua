@@ -24,14 +24,6 @@ local warrant_knight_typ = coop_knight_typ + 1
 
 -- Custom mode buttons use the mod's list position and the mode filename as
 -- their language key (for example "1.coop"), rather than just "coop".
-local coop_mod_index
-for i, entry in ipairs(MODLIST or {}) do
-    if entry.name == "onlinecoop" then
-        coop_mod_index = i
-        break
-    end
-end
-
 local function coop_localize_mode_menu(language)
     local chinese = language == "simplified_chinese"
     local entries = {

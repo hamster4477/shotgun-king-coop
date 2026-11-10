@@ -491,9 +491,8 @@ function onlinecoop_net_tick()
 end
 
 function onlinecoop_net_initialize()
-    for _,entry in ipairs(MODLIST or {}) do
-        if entry.name=="onlinecoop" then onlinecoop_lan=entry.lan_transport end
-    end
+    local entry=MODS[MOD]
+    onlinecoop_lan=entry and entry.lan_transport
     local role=onlinecoop_lan and onlinecoop_lan.role or "offline"
     mode.net={role=role,playback_mode=1,next_id=0,revision=0,epoch=0,last_command=0,expected_command=1,next_command=0,publish_at=0,hello_at=0}
     if onlinecoop_lan then onlinecoop_net_handshake_initialize() end
