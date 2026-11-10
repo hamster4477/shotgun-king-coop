@@ -9,6 +9,25 @@ local function split(s)
     for i=1,#s+1 do if i>#s or sub(s,i,i)=="," then a[#a+1]=sub(s,start,i-1); start=i+1 end end
     return a
 end
+-- The mod sandbox exposes SUGAR's flat helpers (match/sub) but no `string`
+-- table, and `find` does not report positions, so string.gmatch is unavailable
+-- in mod callbacks. Anchor the pattern, take the whole match as the first
+-- capture and continue after it; every pattern here matches at least one
+-- character, so the scan always advances.
+local function each_match(text, pattern)
+    local rest = text or ""
+    local anchored = "^(" .. pattern .. ")"
+    return function()
+        while #rest > 0 do
+            local whole, a, b, c, d = match(rest, anchored)
+            if whole then
+                rest = sub(rest, #whole + 1)
+                return a, b, c, d
+            end
+            rest = sub(rest, 2)
+        end
+    end
+end
 -- Public endpoint is only advertised; never bind a listener to the tunnel server.
 local saved=file("lan/public-endpoint.txt")
 if saved and #saved<=259 and match(saved,"^[A-Za-z0-9.%-]+:%d+$") then ui.external=saved end
@@ -100,7 +119,7 @@ local function consume_input()
     -- Global btnclr suppresses held keys until release, including key repeat.
     -- Consume game controls while retaining the four editing keys.
     for player=0,1 do
-        for name in string.gmatch(controls(nil,player) or "","(%S+)%s*>") do
+        for name in each_match(controls(nil,player) or "","(%S+)%s*>") do
             if player~=0 or not repeat_keys[name] then btnclr(name,player) end
         end
     end
@@ -143,9 +162,9 @@ prepend("_update",function()
             if not ui.requesting or tonum(seq)>=ui.seq then ui.state=state; ui.requesting=false end
             ui.seq=max(ui.seq,tonum(seq)); ui.addresses=split(addresses); ui.invite=invite; ui.error=err
             ui.adapters={}
-            for ip,name in string.gmatch(file(base.."adapters.txt") or "","([0-9.]+)|([^\n]+)") do ui.adapters[ip]=name end
+            for ip,name in each_match(file(base.."adapters.txt") or "","([0-9.]+)|([^\n]+)") do ui.adapters[ip]=name end
             ui.rooms={}
-            for ip,port,key,name in string.gmatch(file(base.."rooms.txt") or "","([0-9.]+):(%d+):([a-f0-9]+)|([A-Za-z0-9 _-]+)") do
+            for ip,port,key,name in each_match(file(base.."rooms.txt") or "","([0-9.]+):(%d+):([a-f0-9]+)|([A-Za-z0-9 _-]+)") do
                 if #key==32 and public_endpoint(ip..":"..port) and #ui.rooms<32 then
                     ui.rooms[#ui.rooms+1]={name=name,address=ip..":"..port,invite="SKCOOP1|"..ip..":"..port.."|"..key}
                 end
