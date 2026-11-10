@@ -8,7 +8,7 @@ lua.execute(r'''
 now=1; hooks={}; files={}; keys={}; texts={}; lines={}; clears=0
 MODLIST={{name="onlinecoop",active=false},{name="3833493529",active=true}}; current_lang="english"; MCW=320
 onlinecoop_lan={status="idle",role="offline"}
-match=string.match; sub=string.sub; tonum=tonumber; min=math.min; max=math.max
+match=string.match; sub=string.sub; tonum=tonumber; min=math.min; max=math.max; ceil=math.ceil; flr=math.floor
 function file(path,value)
  if value then files[path]=value end
  return files[path]

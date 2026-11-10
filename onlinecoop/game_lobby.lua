@@ -28,6 +28,9 @@ local function each_match(text, pattern)
         end
     end
 end
+-- Five rooms per page. SUGAR exposes flr but no math table, and ceil is not
+-- guaranteed for mods, so use floor arithmetic on a positive integer count.
+local function room_pages(count) return flr((count + 4) / 5) end
 -- Public endpoint is only advertised; never bind a listener to the tunnel server.
 local saved=file("lan/public-endpoint.txt")
 if saved and #saved<=259 and match(saved,"^[A-Za-z0-9.%-]+:%d+$") then ui.external=saved end
@@ -169,7 +172,7 @@ prepend("_update",function()
                     ui.rooms[#ui.rooms+1]={name=name,address=ip..":"..port,invite="SKCOOP1|"..ip..":"..port.."|"..key}
                 end
             end
-            ui.room_page=min(ui.room_page,max(0,math.ceil(#ui.rooms/5)-1))
+            ui.room_page=min(ui.room_page,max(0,room_pages(#ui.rooms)-1))
         end
     end
     if not ui.open then return end
@@ -189,7 +192,7 @@ prepend("_update",function()
         elseif btnp("lobby_click",0) then
             if inside(left,158,88,18) then browsing(false)
             elseif inside(left,137,80,17) then ui.room_page=max(0,ui.room_page-1)
-            elseif inside(left+184,137,80,17) then ui.room_page=min(max(0,math.ceil(#ui.rooms/5)-1),ui.room_page+1)
+            elseif inside(left+184,137,80,17) then ui.room_page=min(max(0,room_pages(#ui.rooms)-1),ui.room_page+1)
             elseif available and ready then
                 for row=1,5 do
                     local room=ui.visible_rooms[row]
@@ -299,7 +302,7 @@ append("_draw",function()
             lprint(label("找不到时可返回，用连接码加入","If none appear, go back and use an invite"),MCW/2,72,3,1)
         end
         button(label("上一页","Previous"),left,137,80,17)
-        lprint((ui.room_page+1).."/"..max(1,math.ceil(#ui.rooms/5)),MCW/2,142,3,1)
+        lprint((ui.room_page+1).."/"..max(1,room_pages(#ui.rooms)),MCW/2,142,3,1)
         button(label("下一页","Next"),left+184,137,80,17)
         button(label("返回","Back"),left,158,88,18)
         lprint(label("双方需选同一模式","Use the same game mode"),left+94,164,3)
