@@ -4776,10 +4776,16 @@ function start()
     end
     local grant_wildcards=mode.coop_wildcards_pending==true
     mode.coop_wildcards_pending=nil
-    -- Middle-click queue from the Play menu; one pair per click, capped at five.
-    local wild_pairs=tonum(coop_dev_wild_requests) or 0
+    -- Middle-click or Ctrl+left-click queue from the Play menu; one pair per
+    -- click, capped at five.
+    local wild_pairs=0
+    if type(lang)=="table" then wild_pairs=tonum(lang["coop_dev_wild_requests"]) or 0 end
+    if wild_pairs<1 then wild_pairs=tonum(coop_dev_wild_requests) or 0 end
     if grant_wildcards and wild_pairs<1 then wild_pairs=1 end
     coop_dev_wild_requests=0
+    if _log then
+        _log("[COOP] dev start: wild_pairs="..coop_string(wild_pairs))
+    end
     coop_stats_begin_run()
     mode.coop_heir_reveal_floor=nil
     mode.coop_hidden_boss_pending = nil
@@ -4905,7 +4911,7 @@ function start()
         end
         mode.coop_dev_wild = true
         if _log then
-            _log("[COOP DEBUG] granted "..coop_string(wild_pairs).." Card Lab Wild Card pair(s)")
+            _log("[COOP] granted "..coop_string(wild_pairs).." Card Lab Wild Card pair(s)")
         end
     end
     if mode.coop_dev_wild then
@@ -4920,7 +4926,7 @@ function start()
                 remove_buts()
                 local team = ca.team
                 if _log then
-                    _log("[COOP DEBUG] wild card clicked; picking any card team="
+                    _log("[COOP] wild card clicked; picking any card team="
                         .. coop_string(team))
                 end
                 tear_apart(ca, bind(add_any_card, {team = team}, play))

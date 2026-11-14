@@ -59,11 +59,25 @@ local coop_dev_targets = {}
 local coop_dev_target_count = 0
 local coop_dev_bound = false
 if type(defbtn)=="function" then
-    -- A binding made at mod load survives; make sure it exists before polling,
-    -- because btnp() on an unknown button is a fatal error.
+    -- A binding made at mod load survives; btnp() on an unknown button is a fatal
+    -- error, so it must exist before the polls below run.
     defbtn("coop_dev_mb", 0, "m:mb")
     coop_dev_bound = true
-    if _log then _log("[COOP DEBUG] dev middle-click bound at load") end
+end
+local coop_dev_last_queue = 0
+local function coop_dev_queue(reason)
+    -- The engine repeats a held press every frame, so throttle: one press must
+    -- queue exactly one pair.
+    local now = type(time)=="function" and time() or 0
+    if now - coop_dev_last_queue < .25 then return end
+    coop_dev_last_queue = now
+    coop_dev_wild_requests=min(coop_dev_wild_requests+1,5)
+    -- Each mod file gets its own sandbox table, so hand the count to core.lua
+    -- through a table both files already share.
+    if type(lang)=="table" then lang["coop_dev_wild_requests"]=coop_dev_wild_requests end
+    if _log then
+        _log("[COOP] dev wild cards queued: "..tostr(coop_dev_wild_requests).." pair(s)")
+    end
 end
 append("mk_menu_but",function(id,x,y,w,h)
     if not coop_mod_index or type(id)~="string" then return end
@@ -71,27 +85,23 @@ append("mk_menu_but",function(id,x,y,w,h)
         if id==coop_mod_index..". "..name or id==coop_mod_index.."."..name then
             coop_dev_targets[id]={x=x,y=y,w=w,h=h}
             coop_dev_target_count=coop_dev_target_count+1
-            if _log then
-                _log("[COOP DEBUG] dev menu target "..id.." rect "
-                    ..tostr(x)..","..tostr(y).." "
-                    ..tostr(w).."x"..tostr(h))
-            end
             return
         end
     end
 end,"coop_dev_wild_menu_targets")
 append("_update",function()
+
     if not coop_dev_bound then return end
     if type(btnp)~="function" or not btnp("coop_dev_mb") then return end
     -- One press must queue one pair: consume it here, or a held middle button
     -- repeats every frame and fills the cap immediately.
     if type(btnclr)=="function" then btnclr("coop_dev_mb") end
     if type(menu)~="table" then
-        if _log then _log("[COOP DEBUG] dev mid pressed with no menu") end
+        if _log then _log("[COOP] dev mid pressed with no menu") end
         return
     end
     if coop_dev_target_count==0 then
-        if _log then _log("[COOP DEBUG] dev mid pressed with no recorded target") end
+        if _log then _log("[COOP] dev mid pressed with no recorded target") end
         return
     end
     -- Menu content is drawn offset from the rects mk_menu_but receives, so trust
@@ -107,19 +117,11 @@ append("_update",function()
                         and my>=but.y-14 and my<=but.y+(but.h or 0)+14
                 end
                 if hovered then
-                    coop_dev_wild_requests=min(coop_dev_wild_requests+1,5)
-                    if _log then
-                        _log("[COOP DEBUG] dev Wild Cards queued: "
-                            ..tostr(coop_dev_wild_requests).." pair(s)")
-                    end
+                    coop_dev_queue("middle-click")
                     return
                 end
             end
         end
-    end
-    if _log then
-        _log("[COOP DEBUG] dev mid pressed, no co-op entry hovered mouse="
-            ..tostr(mx)..","..tostr(my))
     end
 end,"coop_dev_wild_menu")
 
