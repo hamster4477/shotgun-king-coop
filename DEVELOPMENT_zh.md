@@ -18,6 +18,11 @@
 python tools/package.py
 ```
 
+打包前先运行 `python tools/check_release.py`。如要核对本机运行版，可运行
+`python tools/check_release.py --compare "游戏目录/mods/onlinecoop"`；替换为实际路径。
+该检查会报告缺失文件、非法清单条目及两个副本的内容差异。不要用旧源码覆盖已修复的运行版。
+维护交接见 [MAINTENANCE_zh.md](MAINTENANCE_zh.md)，收尾审查见 [FINAL_AUDIT_zh.md](FINAL_AUDIT_zh.md)。
+
 玩家 ZIP 会生成在 `dist/` 目录。打包脚本使用明确的文件清单，排除测试与运行数据，并拒绝覆盖已有压缩包。
 
 在 Windows 上运行附带检查：

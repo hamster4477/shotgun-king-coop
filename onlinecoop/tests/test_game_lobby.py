@@ -8,7 +8,7 @@ lua.execute(r'''
 now=1; hooks={}; files={}; keys={}; texts={}; lines={}; clears=0
 MODLIST={{name="onlinecoop",active=false},{name="3833493529",active=true}}; current_lang="english"; MCW=320
 onlinecoop_lan={status="idle",role="offline"}
-match=string.match; sub=string.sub; tonum=tonumber; min=math.min; max=math.max; ceil=math.ceil; flr=math.floor
+match=string.match; sub=string.sub; tonum=tonumber; min=math.min; max=math.max; flr=math.floor
 function file(path,value)
  if value then files[path]=value end
  return files[path]
@@ -61,9 +61,25 @@ function draw() texts={}; lines={}; hooks.online_lobby_draw() end
 # Run the real entry script to select the active Workshop copy. This harness
 # supplies the transport and loads the lobby module directly.
 lua.execute("require=function() end; newsfx=function() end")
-lua.execute((ROOT/'script.lua').read_text(encoding='utf-8'))
+# Keep the harness libraries intact, but run mod chunks and their callbacks in
+# the engine-style sandbox. Previously the test's string/math globals masked
+# an actual native startup failure when the broker supplied its first status.
+load_mod = lua.eval(r'''function(source, name)
+ local env=setmetatable({}, {
+  __index=function(_, key)
+   if key=="string" or key=="math" then return nil end
+   return _G[key]
+  end,
+  __newindex=_G
+ })
+ assert(env.string==nil and env.math==nil)
+ local chunk=assert(loadstring(source, name))
+ setfenv(chunk, env)
+ return chunk()
+end''')
+load_mod((ROOT/'script.lua').read_text(encoding='utf-8'), '@script.lua')
 lua.execute("assert(coop_mod_index==2 and not MODLIST[1].lan_lobby)")
-lua.execute((ROOT/'game_lobby.lua').read_text(encoding='utf-8'))
+load_mod((ROOT/'game_lobby.lua').read_text(encoding='utf-8'), '@game_lobby.lua')
 lua.execute(r'''
 -- Heartbeats alone cannot open a lobby or intercept ordinary menu input.
 status("ready",0,1); hooks.online_lobby_input()
@@ -214,3 +230,36 @@ click(240,12);keys={lobby_escape=true};hooks.online_lobby_input()
 assert(files[base_test.."discover.txt"]=="OFF")
 ''')
 print('PASS: nearby selection, discovery stop, classified failure/retry and held editing keys')
+
+# Parser/pagination regression: use actual restricted callbacks, including
+# multiple rows, ignored text and the 32-room display bound.
+lua.execute(r'''
+local key=string.rep("d",32)
+local function refresh_rooms(count)
+ local rows={"ignored header", ""}
+ for i=1,count do rows[#rows+1]="192.168.2."..i..":27841:"..key.."|Room-"..i end
+ files[base_test.."rooms.txt"]=table.concat(rows,"\n")
+ files[base_test.."adapters.txt"]="192.168.2.1|Ethernet\n192.168.2.2|Wi-Fi\n127.0.0.1|Loopback"
+ now=now+1;status("ready",10,math.floor(now));hooks.online_lobby_input()
+end
+refresh_rooms(5);click(240,12);draw()
+assert(string.find(table.concat(texts,"\n"),"1/1",1,true))
+click(250,145);draw();assert(string.find(table.concat(texts,"\n"),"1/1",1,true))
+refresh_rooms(6);draw();assert(string.find(table.concat(texts,"\n"),"1/2",1,true))
+click(250,145);draw()
+local combined=table.concat(texts,"\n")
+assert(string.find(combined,"2/2",1,true) and string.find(combined,"Room-6",1,true))
+assert(not string.find(combined,"Room-1",1,true))
+refresh_rooms(33)
+for i=1,8 do click(250,145);draw() end
+combined=table.concat(texts,"\n")
+assert(string.find(combined,"7/7",1,true))
+assert(string.find(combined,"Room-32",1,true) and not string.find(combined,"Room-33",1,true))
+refresh_rooms(0);draw()
+combined=table.concat(texts,"\n")
+assert(string.find(combined,"1/1",1,true) and string.find(combined,"Searching",1,true))
+keys={lobby_escape=true};hooks.online_lobby_input();draw()
+assert(string.find(table.concat(texts,"\n"),"Loopback",1,true))
+assert(type(string.gmatch)=="function" and type(math.ceil)=="function", "Test helpers keep their standard libraries")
+''')
+print('PASS: sandboxed multi-line parsing, 5/6/32-room pagination, cap and empty-list clamp')

@@ -2,8 +2,8 @@
 __pycache__/
 *.pyc
 onlinecoop/lan/*
-!onlinecoop/lan/LanDiscovery.cs
 !onlinecoop/lan/LanTransport.cs
+!onlinecoop/lan/LanDiscovery.cs
 onlinecoop/tests/broker-*/
 *.log
 *.dmp

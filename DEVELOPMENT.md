@@ -18,6 +18,12 @@ Build a player ZIP from the repository root with Python 3:
 python tools/package.py
 ```
 
+Before packaging, run `python tools/check_release.py`. To compare against an installed copy,
+run `python tools/check_release.py --compare "GAME_DIR/mods/onlinecoop"` with the actual path.
+This checks missing files, invalid manifest entries, and differences between copies.
+Do not overwrite a fixed installed copy with stale source files.
+See [the maintenance handoff](MAINTENANCE_zh.md) and [the final audit](FINAL_AUDIT_zh.md) (Chinese).
+
 The archive is written to `dist/`. The script uses an explicit file manifest, excludes tests and runtime data, and refuses to overwrite an existing archive.
 
 Run the included checks on Windows:
