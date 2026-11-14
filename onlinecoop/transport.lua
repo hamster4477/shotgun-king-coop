@@ -13,6 +13,7 @@ local session,role,base=nil,"offline",nil
 local last_config,next_config=nil,0
 local tx, rx, next_poll, next_status = 0, 0, 0, 0
 local status, previous_status = "waiting", nil
+local message_limit_reached=false
 local probe = file("lan/probe.txt") == "PING100"
 local probe_started, probe_done, pong_count = false, false, 0
 local ping_time = 0
@@ -50,6 +51,7 @@ local function configure(text)
     batch_first,batch_count,batch_body=0,0,""
     out_groups,out_head,out_tail,out_retired={},1,0,0
     previous_status=nil; probe_started,probe_done,pong_count=false,false,0
+    message_limit_reached=false
     onlinecoop_lan.session=session; onlinecoop_lan.role=role; onlinecoop_lan.status=status
 end
 configure(file("lan/config.txt"))
@@ -77,7 +79,20 @@ function onlinecoop_lan.can_send_visual()
     return tx-out_retired<4
 end
 function onlinecoop_lan.send(kind, payload)
-    if status ~= "connected" or tx >= 300000 then return false end
+    if status ~= "connected" then return false end
+    if tx >= 300000 then
+        -- The bridge has the same session limit. Silent send failures leave
+        -- both games waiting for an ACK while TCP heartbeats still succeed.
+        -- End this session explicitly; never unlock or replay an action.
+        message_limit_reached=true
+        status="error"; onlinecoop_lan.status=status
+        batch_first,batch_count,batch_body=0,0,""
+        local detail="Session message limit reached (300000); restart both games. / 联机消息达到上限，请双方重启游戏。"
+        _log(prefix..detail)
+        file(base.."error.txt",detail)
+        file(base.."stop.txt","stop")
+        return false
+    end
     if kind ~= "ping" and kind ~= "pong" and kind ~= "data" then return false end
     if type(payload) ~= "string" or #payload > 16384
         or find(payload, "[^A-Za-z0-9_,:.=%-]") then return false end
@@ -122,7 +137,9 @@ append("_update", function()
     local sid, state
     if text then sid, state = match(text, "^OC1|([a-f0-9]+)|([a-z]+)|END$") end
     if sid ~= session then return end
-    status = state
+    -- The helper may still report connected until it consumes stop.txt.
+    -- Keep the terminal error latched until a new session is configured.
+    status = message_limit_reached and "error" or state
     onlinecoop_lan.status = status
     if status ~= previous_status then
         _log(prefix .. "STATUS " .. status)
