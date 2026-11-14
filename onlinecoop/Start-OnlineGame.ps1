@@ -1,17 +1,46 @@
-﻿param([switch]$CheckOnly,[switch]$MultiCore)
+param([switch]$CheckOnly,[switch]$MultiCore)
 $ErrorActionPreference='Stop'
 Import-Module (Join-Path $PSScriptRoot 'InstallPaths.psm1') -Force
 $install=Get-OnlineCoopInstall $PSScriptRoot
 $root=$install.GameRoot; $exe=$install.GameExe
 if($CheckOnly){Write-Output $exe; Write-Output ('Mod: '+$install.Kind+' / '+$install.ModId); Write-Output $(if($MultiCore){'CPU mode: normal affinity (multi-core)'}else{'CPU mode: single-core compatibility'}); return}
 $utf8=[Text.UTF8Encoding]::new($false)
+# Only this mod is forced on: the legacy local co-op is forced off (overlapping
+# card names and rules), everything else keeps the player's own setting. This mod
+# goes last because SUGAR applies one global path prefix, so the last loaded mod
+# owns every file() path and the co-op lobby reads and writes its own folder only
+# while it is last.
+function Get-ManagedModList([string]$path,[string]$id){
+    $entries=New-Object System.Collections.ArrayList
+    $seen=@{}
+    if(Test-Path -LiteralPath $path -PathType Leaf){
+        foreach($line in [IO.File]::ReadAllLines($path)){
+            $m=[regex]::Match($line,"\{\s*'([^']+)'\s*,\s*(true|false)")
+            if(-not $m.Success){continue}
+            $name=$m.Groups[1].Value
+            if($seen.ContainsKey($name)){continue}
+            $seen[$name]=$true
+            [void]$entries.Add([pscustomobject]@{Name=$name;Active=($m.Groups[2].Value -eq 'true')})
+        }
+    }
+    if(-not $seen.ContainsKey($id)){[void]$entries.Add([pscustomobject]@{Name=$id;Active=$true})}
+    $text="return {`n"
+    foreach($entry in $entries){
+        if($entry.Name -eq $id){continue}
+        $active=$entry.Active
+        if($entry.Name -eq 'coop'){$active=$false}
+        $text += "`t{ '$($entry.Name)', $(if($active){'true'}else{'false'}) },`n"
+    }
+    $text += "`t{ '$id', true },`n}"
+    return $text
+}
+$list=Join-Path $root 'mods/modlist.lua'
+$managed=Get-ManagedModList $list $install.ModId
 [IO.Directory]::CreateDirectory((Join-Path $root 'mods')) | Out-Null
 $lan=Join-Path $PSScriptRoot 'lan'; [IO.Directory]::CreateDirectory($lan) | Out-Null
 $lock=[IO.FileStream]::new((Join-Path $root 'mods/.onlinecoop-launcher.lock'),[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
 $game=$null; $broker=$null; $backup=$null; $listWritten=$false
 $id=[Guid]::NewGuid().ToString('N'); $box=Join-Path $lan ('lobby/'+$id)
-$list=Join-Path $root 'mods/modlist.lua'
-$managed=$install.ManagedModList
 $hadList=Test-Path -LiteralPath $list -PathType Leaf
 [IO.Directory]::CreateDirectory((Split-Path $list -Parent)) | Out-Null
 try {
