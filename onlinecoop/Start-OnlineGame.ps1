@@ -5,11 +5,10 @@ $install=Get-OnlineCoopInstall $PSScriptRoot
 $root=$install.GameRoot; $exe=$install.GameExe
 if($CheckOnly){Write-Output $exe; Write-Output ('Mod: '+$install.Kind+' / '+$install.ModId); Write-Output $(if($MultiCore){'CPU mode: normal affinity (multi-core)'}else{'CPU mode: single-core compatibility'}); return}
 $utf8=[Text.UTF8Encoding]::new($false)
-# Only this mod is forced on: the legacy local co-op is forced off (overlapping
-# card names and rules), everything else keeps the player's own setting. This mod
-# goes last because SUGAR applies one global path prefix, so the last loaded mod
-# owns every file() path and the co-op lobby reads and writes its own folder only
-# while it is last.
+# Only this mod is forced on; every other entry keeps the player's own setting.
+# This mod goes last because SUGAR applies one global path prefix, so the last
+# loaded mod owns every file() path and the co-op lobby reads and writes its own
+# folder only while it is last.
 function Get-ManagedModList([string]$path,[string]$id){
     $entries=New-Object System.Collections.ArrayList
     $seen=@{}
@@ -27,9 +26,7 @@ function Get-ManagedModList([string]$path,[string]$id){
     $text="return {`n"
     foreach($entry in $entries){
         if($entry.Name -eq $id){continue}
-        $active=$entry.Active
-        if($entry.Name -eq 'coop'){$active=$false}
-        $text += "`t{ '$($entry.Name)', $(if($active){'true'}else{'false'}) },`n"
+        $text += "`t{ '$($entry.Name)', $(if($entry.Active){'true'}else{'false'}) },`n"
     }
     $text += "`t{ '$id', true },`n}"
     return $text

@@ -4896,12 +4896,65 @@ function start()
     if grant_wildcards and get_card and add_card
         and get_card("Black Wild Card") then
         add_card("Black Wild Card")
+        mode.coop_dev_wild = true
         if _log then _log("[COOP DEBUG] granted Card Lab Black Wild Card for range test") end
     end
     if grant_wildcards and get_card and add_card
         and get_card("White Wild Card") then
         add_card("White Wild Card")
+        mode.coop_dev_wild = true
         if _log then _log("[COOP DEBUG] granted Card Lab White Wild Card for card test") end
+    end
+    if mode.coop_dev_wild then
+        -- Card Lab's Wild Card click handler never runs in this build: nothing
+        -- calls its on_card_but_init hook, and native only creates hand-card
+        -- buttons while stack.special=="dev". Wire the granted cards ourselves
+        -- with the same flow Card Lab uses: tear the card, then pick any card
+        -- of its team. append() replaces an earlier entry with the same id.
+        local function coop_dev_wild_click(ca)
+            return function()
+                if not mode or not mode.coop_dev_wild then return end
+                remove_buts()
+                local team = ca.team
+                if _log then
+                    _log("[COOP DEBUG] wild card clicked; picking any card team="
+                        .. coop_string(team))
+                end
+                tear_apart(ca, bind(add_any_card, {team = team}, play))
+            end
+        end
+        append("_update", function()
+            if not mode or not mode.coop_dev_wild or mode.coop_pause_menu_open then return end
+            if leveling or mode.coop_selected ~= "king" then return end
+            if type(get_slot_cards) ~= "function" or type(get_all_buts) ~= "function"
+                or type(mk_but) ~= "function" or type(tear_apart) ~= "function"
+                or type(add_any_card) ~= "function" or type(play) ~= "function" then return end
+            local now = time()
+            if mode.coop_dev_wild_next and now < mode.coop_dev_wild_next then return end
+            mode.coop_dev_wild_next = now + .1
+            local buttons = get_all_buts() or {}
+            for ca in all(get_slot_cards() or {}) do
+                if ca.wild and type(ca.x) == "number" and type(ca.y) == "number" then
+                    local wired = false
+                    for _, b in ipairs(buttons) do
+                        if type(b) == "table" and not b.issq
+                            and b.x == ca.x - 5 and b.y == ca.y - 5
+                            and b.w == 24 and b.h == 32 then
+                            wired = true
+                            if not b.coop_dev_wild then
+                                b.coop_dev_wild = true
+                                b.left_clic = coop_dev_wild_click(ca)
+                            end
+                            break
+                        end
+                    end
+                    if not wired then
+                        local b = mk_but(ca.x - 5, ca.y - 5, 24, 32, coop_dev_wild_click(ca))
+                        if b then b.coop_dev_wild = true end
+                    end
+                end
+            end
+        end, "coop_dev_wild_buttons")
     end
     mode.lvl = mode.coop_initial_floor or 0
     mode.turns = 0
