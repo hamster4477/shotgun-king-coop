@@ -4776,6 +4776,10 @@ function start()
     end
     local grant_wildcards=mode.coop_wildcards_pending==true
     mode.coop_wildcards_pending=nil
+    -- Middle-click queue from the Play menu; one pair per click, capped at five.
+    local wild_pairs=tonum(coop_dev_wild_requests) or 0
+    if grant_wildcards and wild_pairs<1 then wild_pairs=1 end
+    coop_dev_wild_requests=0
     coop_stats_begin_run()
     mode.coop_heir_reveal_floor=nil
     mode.coop_hidden_boss_pending = nil
@@ -4891,19 +4895,18 @@ function start()
     -- Card Lab initializes this flag before adding Wild Cards. Keep the
     -- same card-button state in Co-op when granting its debug cards.
     mode.unlimited = false
-    -- Only the menu's explicit right-click launch grants test cards.
-    -- Consume the request once; restarts and subsequent floors do not regrant.
-    if grant_wildcards and get_card and add_card
-        and get_card("Black Wild Card") then
-        add_card("Black Wild Card")
+    -- Test cards are queued from the Play menu with the middle button (one pair
+    -- per click, capped at five) and consumed here once, so restarts and later
+    -- floors do not grant them again.
+    if wild_pairs>0 and get_card and add_card and get_card("Black Wild Card") then
+        for _=1,wild_pairs do
+            add_card("Black Wild Card")
+            if get_card("White Wild Card") then add_card("White Wild Card") end
+        end
         mode.coop_dev_wild = true
-        if _log then _log("[COOP DEBUG] granted Card Lab Black Wild Card for range test") end
-    end
-    if grant_wildcards and get_card and add_card
-        and get_card("White Wild Card") then
-        add_card("White Wild Card")
-        mode.coop_dev_wild = true
-        if _log then _log("[COOP DEBUG] granted Card Lab White Wild Card for card test") end
+        if _log then
+            _log("[COOP DEBUG] granted "..coop_string(wild_pairs).." Card Lab Wild Card pair(s)")
+        end
     end
     if mode.coop_dev_wild then
         -- Card Lab's Wild Card click handler never runs in this build: nothing

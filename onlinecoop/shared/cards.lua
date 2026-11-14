@@ -50,30 +50,39 @@ end
 coop_localize_mode_menu(current_lang)
 append("load_lang", coop_localize_mode_menu, "coop_mode_menu_translation")
 
--- Use the native menu button's right-click path, not a board-wide mouse hook.
--- set_mode runs synchronously inside act_menu; starting the run is deferred
--- until rank/weapon selection. Store the opt-in on that new mode only.
-append("mk_menu_but",function(id)
-    if not coop_mod_index then return end
-    local matches=false
+-- Dev launch: middle-click a co-op mode entry to queue one extra Wild Card pair
+-- for the next run, then left-click it to start. Right-click is left native; the
+-- old right-click opt-in also fast-forwarded the opening animation. Buttons have
+-- no mid_clic callback, so remember each entry's rect and poll the middle button.
+if type(defbtn)=="function" then defbtn("coop_dev_mb", 0, "m:mb") end
+coop_dev_wild_requests = coop_dev_wild_requests or 0
+local coop_dev_targets = {}
+append("mk_menu_but",function(id,x,y,w,h)
+    if not coop_mod_index or type(id)~="string" then return end
     for _,name in ipairs({"coop","coop_endless","coop_charnier"}) do
-        if id==coop_mod_index..". "..name or id==coop_mod_index.."."..name then matches=true end
-    end
-    if not matches then return end
-    for _,entry in ipairs(menu or {}) do
-        if entry.id==id and entry.but and not entry.lock then
-            local button=entry.but
-            button.right_clic=function()
-                if button.skip then return end
-                act_menu(id)
-                if mode and mode.id=="coop" then
-                    mode.coop_wildcards_pending=true
-                    if _log then _log("[COOP DEBUG] right-click Wild Cards enabled for next run") end
-                end
-            end
+        if id==coop_mod_index..". "..name or id==coop_mod_index.."."..name then
+            coop_dev_targets[id]={x=x,y=y,w=w,h=h}
+            return
         end
     end
-end,"coop_wildcards_menu_opt_in")
+end,"coop_dev_wild_menu_targets")
+append("_update",function()
+    if type(menu)~="table" then return end
+    if type(btnp)~="function" or not btnp("coop_dev_mb") then return end
+    for id,r in pairs(coop_dev_targets) do
+        if mx and my and r.x and r.y
+            and mx>=r.x and mx<r.x+(r.w or 0)
+            and my>=r.y and my<r.y+(r.h or 0) then
+            coop_dev_wild_requests=min(coop_dev_wild_requests+1,5)
+            if type(btnclr)=="function" then btnclr("coop_dev_mb") end
+            if _log then
+                _log("[COOP DEBUG] dev Wild Cards queued: "
+                    ..coop_string(coop_dev_wild_requests).." pair(s)")
+            end
+            return
+        end
+    end
+end,"coop_dev_wild_menu")
 
 local function coop_localize_cards(language)
     local chinese = language == "simplified_chinese"
