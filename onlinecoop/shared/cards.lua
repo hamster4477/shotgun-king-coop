@@ -54,33 +54,72 @@ append("load_lang", coop_localize_mode_menu, "coop_mode_menu_translation")
 -- for the next run, then left-click it to start. Right-click is left native; the
 -- old right-click opt-in also fast-forwarded the opening animation. Buttons have
 -- no mid_clic callback, so remember each entry's rect and poll the middle button.
-if type(defbtn)=="function" then defbtn("coop_dev_mb", 0, "m:mb") end
 coop_dev_wild_requests = coop_dev_wild_requests or 0
 local coop_dev_targets = {}
+local coop_dev_target_count = 0
+local coop_dev_bound = false
+if type(defbtn)=="function" then
+    -- A binding made at mod load survives; make sure it exists before polling,
+    -- because btnp() on an unknown button is a fatal error.
+    defbtn("coop_dev_mb", 0, "m:mb")
+    coop_dev_bound = true
+    if _log then _log("[COOP DEBUG] dev middle-click bound at load") end
+end
 append("mk_menu_but",function(id,x,y,w,h)
     if not coop_mod_index or type(id)~="string" then return end
     for _,name in ipairs({"coop","coop_endless","coop_charnier"}) do
         if id==coop_mod_index..". "..name or id==coop_mod_index.."."..name then
             coop_dev_targets[id]={x=x,y=y,w=w,h=h}
+            coop_dev_target_count=coop_dev_target_count+1
+            if _log then
+                _log("[COOP DEBUG] dev menu target "..id.." rect "
+                    ..tostr(x)..","..tostr(y).." "
+                    ..tostr(w).."x"..tostr(h))
+            end
             return
         end
     end
 end,"coop_dev_wild_menu_targets")
 append("_update",function()
-    if type(menu)~="table" then return end
+    if not coop_dev_bound then return end
     if type(btnp)~="function" or not btnp("coop_dev_mb") then return end
-    for id,r in pairs(coop_dev_targets) do
-        if mx and my and r.x and r.y
-            and mx>=r.x and mx<r.x+(r.w or 0)
-            and my>=r.y and my<r.y+(r.h or 0) then
-            coop_dev_wild_requests=min(coop_dev_wild_requests+1,5)
-            if type(btnclr)=="function" then btnclr("coop_dev_mb") end
-            if _log then
-                _log("[COOP DEBUG] dev Wild Cards queued: "
-                    ..coop_string(coop_dev_wild_requests).." pair(s)")
+    -- One press must queue one pair: consume it here, or a held middle button
+    -- repeats every frame and fills the cap immediately.
+    if type(btnclr)=="function" then btnclr("coop_dev_mb") end
+    if type(menu)~="table" then
+        if _log then _log("[COOP DEBUG] dev mid pressed with no menu") end
+        return
+    end
+    if coop_dev_target_count==0 then
+        if _log then _log("[COOP DEBUG] dev mid pressed with no recorded target") end
+        return
+    end
+    -- Menu content is drawn offset from the rects mk_menu_but receives, so trust
+    -- the engine's own hover flag first and keep a small coordinate tolerance.
+    for _,entry in ipairs(menu) do
+        if type(entry)=="table" and entry.id and coop_dev_targets[entry.id] then
+            local but=entry.but
+            if type(but)=="table" then
+                local hovered = but.ov and true or false
+                if not hovered and mx and my then
+                    hovered = type(but.x)=="number" and type(but.y)=="number"
+                        and mx>=but.x-2 and mx<=but.x+(but.w or 0)+2
+                        and my>=but.y-14 and my<=but.y+(but.h or 0)+14
+                end
+                if hovered then
+                    coop_dev_wild_requests=min(coop_dev_wild_requests+1,5)
+                    if _log then
+                        _log("[COOP DEBUG] dev Wild Cards queued: "
+                            ..tostr(coop_dev_wild_requests).." pair(s)")
+                    end
+                    return
+                end
             end
-            return
         end
+    end
+    if _log then
+        _log("[COOP DEBUG] dev mid pressed, no co-op entry hovered mouse="
+            ..tostr(mx)..","..tostr(my))
     end
 end,"coop_dev_wild_menu")
 
