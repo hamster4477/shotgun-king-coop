@@ -11,6 +11,9 @@ the two blocks below.
 
 ## English
 
+[b]LAN play needs the launcher.[/b] The LAN modes always appear under Play, but creating or joining a room only works when the game is started through the Online Co-op launcher (setup below). Local Co-op needs no setup.
+
+
 The Black King has a shotgun. His last loyal Knight has a blade. Play through Throne, Endless or Charnier together, with new cards that reward fighting side by side and hidden endings to discover.
 
 [b]A hint for curious players[/b]
@@ -36,6 +39,8 @@ Both PCs must be able to reach each other. Use the same LAN, join the same virtu
 Report bugs or suggest changes on [url=https://github.com/hamster4477/shotgun-king-coop/issues]GitHub Issues[/url], or email hamster4477@qq.com. For bugs, include your role (King or Knight), the floor, and what happened just before the issue.
 
 ## 简体中文
+
+[b]联机需要先用启动器。[/b]「局域网」系列模式在「游玩」里对所有订阅者可见，但只有通过联机启动器启动游戏后，才能创建或加入房间（设置见下文）。本地合作不需要任何设置。
 
 黑王使用霰弹枪，最后一名仍追随他的黑骑士使用刀锋。两人可以一起挑战王座、无尽和剿灭模式，搭配围绕枪与刀与新玩家设计的新卡牌，也可以试着找出隐藏结局。
 

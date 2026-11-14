@@ -108,7 +108,11 @@ local function enter(entry)
     -- Keep the existing preconnected command-line/local-test entry usable.
     if not live() and onlinecoop_lan and onlinecoop_lan.status=="connected" then return false end
     ui.open=true; ui.settings=false; ui.focus=nil; ui.message=""; setup(); catchtxt(); btnclr()
-    _log("[ONLINE LOBBY] opened from mode menu")
+    -- One-time reminder when the lobby opens without a helper: the LAN modes are
+    -- always listed, but hosting and joining need the Online Co-op launcher.
+    ui.notice_until = (ui.alive and time()<ui.alive) and nil or (time()+6)
+    _log("[ONLINE LOBBY] opened from mode menu; helper="
+        ..(live() and "yes" or "no"))
     return true
 end
 if coop_mod_index then MODLIST[coop_mod_index].lan_lobby={enter=enter} end
@@ -288,6 +292,15 @@ append("_draw",function()
     local overlay=winspec("overlay")
     if overlay=="hdtext" and srfname(overlay) then local previous=srfname(); target(overlay); cls(255); target(previous) end
     clip(); pal(); rectfill(0,0,MCW,240,1)
+    -- Temporary banner: the LAN modes are always listed, so say plainly that
+    -- networking needs the Online Co-op launcher when no helper answers.
+    if ui.notice_until and time()<ui.notice_until and not live() then
+        local text=label("未检测到联机助手：请用联机启动器启动",
+                         "No co-op helper: use the Co-op launcher")
+        rectfill(0,52,MCW,72,1)
+        rectfill(0,52,MCW,54,5)
+        lprint(text,8,58,4,1)
+    end
     local left=MCW/2-132
     if ui.nearby then
         lprint(label("附近房间","Nearby rooms"),MCW/2,6,4,1)
