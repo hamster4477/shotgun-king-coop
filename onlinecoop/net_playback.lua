@@ -72,7 +72,57 @@ end
 -- The host owns the clips, so it cancels and tells the guest; a guest that gives
 -- up asks the host to stop waiting with X1.
 local abort_bound=false
-if type(defbtn)=="function" then defbtn("online_abort_clip",0,"k:f5"); abort_bound=true end
+if type(defbtn)=="function" then
+    defbtn("online_abort_clip",0,"k:f5")
+    -- F9 dumps on demand; the stall detector below also writes it by itself so a
+    -- hang is captured even if nobody presses anything.
+    defbtn("online_state_dump",0,"k:f9")
+    abort_bound=true
+end
+-- Every flag onlinecoop_net_phase() consults, on one line.
+local function coop_state_line()
+    local n=mode.net
+    return "phase="..tostr(onlinecoop_net_phase())
+        .." role="..tostr(n.role)
+        .." selected="..tostr(mode.coop_selected)
+        .." paused="..tostr(mode.coop_pause_menu_open and 1 or 0)
+        .." king_locked="..tostr(mode.coop_king_move_input_locked and 1 or 0)
+        .." native="..tostr(n.native_choice)
+        .." grace="..tostr(mode.coop_white_move_grace_frames)
+        .." events="..tostr(type(events)=="table" and #events or 0)
+        .." knight_pending="..tostr(mode.coop_auto_select_knight_pending and 1 or 0)
+        .." turn_busy="..tostr(mode.coop_native_turn_in_progress and 1 or 0)
+        .." floor_end="..tostr(coop_floor_is_ending() and 1 or 0)
+        .." in_move="..tostr(hero and hero.in_move and 1 or 0)
+        .." clip_host="..tostr(n.clip_host and n.clip_host.id or "-")
+        .." clip_client="..tostr(n.clip_client and n.clip_client.id or "-")
+        .." disrupt="..tostr(disrupt_menu and 1 or 0)
+        .." draft="..tostr(n.draft and n.draft.active and 1 or 0)
+end
+if type(append)=="function" then
+append("_update",function()
+    if not abort_bound or not mode or not mode.net then return end
+    local n=mode.net
+    if btnp("online_state_dump",0) then
+        if _log then _log("[COOP STATE] "..coop_state_line()) end
+    end
+    -- A turn that stays in "animating" or "blocked" for several seconds is the
+    -- shape of every freeze report. Record it once at three seconds and twice
+    -- more at ten second intervals, so the log alone explains a hang.
+    local phase=onlinecoop_net_phase()
+    if phase==3 or phase==4 then
+        n.stall_since=n.stall_since or time()
+        local waited=time()-n.stall_since
+        if waited>=3 and (n.stall_logs or 0)<3 and time()>=(n.stall_next or 0) then
+            n.stall_logs=(n.stall_logs or 0)+1
+            n.stall_next=time()+10
+            if _log then _log("[COOP STUCK "..flr(waited).."s] "..coop_state_line()) end
+        end
+    else
+        n.stall_since=nil; n.stall_logs=nil; n.stall_next=nil
+    end
+end,"online_state_dump")
+end
 local function abort_clip(reason)
     local n=mode.net
     if not n or not n.peer_ok then return false end
