@@ -282,7 +282,13 @@ end
 assert(MODLIST[2].lan_lobby.enter())
 now=60;status("ready",20,60);hooks.online_lobby_input();draw()
 local before_steam=last_request()
-mx,my=100,22
+-- The trigger is limited to the title text: Ctrl + right-click just below it
+-- must stay on the LAN transport.
+mx,my=160,40
+ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
+assert(not string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"gesture must stay on the title")
+ctrl_held=false
+mx,my=160,10
 ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
 assert(string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"gesture must switch the visible transport")
 ctrl_held=false
@@ -303,13 +309,13 @@ local join=last_request()
 assert(join and string.find(join,"|steamclient|109775244637163549|",1,true),"guest must ask to join the Steam lobby")
 -- The gesture toggles back to the LAN transport.
 now=66;files[base_test.."status.txt"]="LB1|ready|127.0.0.1|-|none|40|66|END";hooks.online_lobby_input()
-mx,my=100,22
+mx,my=160,10
 ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
 assert(not string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"gesture must switch back to the LAN transport")
 -- Without the developer package the gesture must refuse instead of
 -- switching into a transport that cannot start.
 steam_files_present=false
-mx,my=100,22
+mx,my=160,10
 ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
 assert(not string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"missing package must not switch")
 assert(string.find(table.concat(texts,"\n"),"helper missing",1,true),"missing package must explain itself")

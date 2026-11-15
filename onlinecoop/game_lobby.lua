@@ -215,6 +215,9 @@ local function layout()
     return {
         left=left,
         title_y=6,
+        -- The hidden developer gesture only listens on the title text itself, so
+        -- it cannot be triggered by a stray Ctrl + right-click elsewhere.
+        title_hit={left+62,3,140,15},
         create={left,24,88,23},
         nearby={left+96,24,72,23},
         join={left+176,24,88,23},
@@ -239,6 +242,11 @@ local function layout()
 end
 local function hit(box) return inside(box[1],box[2],box[3],box[4]) end
 local function retryable() return ui.last_request end
+-- Status line shade per state: dim while idle, the accent while a room is open or
+-- connecting, the alarm shade for failures. These are palette slots; adjust here
+-- if a shade reads wrong on screen.
+local message_colors={ready=3,starting=11,waiting=11,connected=4,error=5,stopped=5}
+local function message_color(state) return message_colors[state] or 4 end
 -- Copy whatever invite the broker published: a Steam lobby id or a TCP endpoint.
 -- Used by the create button and by the automatic copy that follows room creation.
 local function copy_invite()
@@ -349,7 +357,7 @@ prepend("_update",function()
     -- Developer transport: Ctrl + right-click on the title switches between the
     -- LAN / virtual-LAN route and the experimental Steam P2P tunnel. It is not
     -- advertised in the player UI; the Steam tunnel binary ships separately.
-    if ready and inside(MCW/2-132,4,264,26) and btn("lobby_ctrl",0) and btnp("lobby_rclick",0) then
+    if ready and hit(layout().title_hit) and btn("lobby_ctrl",0) and btnp("lobby_rclick",0) then
         -- Refuse the switch when the developer package is absent: the public LAN
         -- build ships the gesture but not the tunnel binary.
         if not steam_available() then
@@ -510,7 +518,7 @@ append("_draw",function()
         message=errors[ui.error] or message
     end
     if not live() then message=label("助手未启动，请通过联机启动器运行","Use an Online Co-op launcher to enable networking") end
-    lprint(message,MCW/2,L.message_y,4,1)
+    lprint(message,MCW/2,L.message_y,message_color(ui.state),1)
     -- Retry only appears after a failed or dropped attempt: leaving the lobby
     -- already releases the connection, so a permanent cancel button was noise.
     if retryable() and (ui.state=="error" or ui.state=="stopped") then
