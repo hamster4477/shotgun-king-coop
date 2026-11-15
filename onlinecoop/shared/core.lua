@@ -5797,3 +5797,63 @@ function coop_perform_knight_action(knight, target, context)
 
     return blade_handled
 end
+
+-- Developer run bootstrap: lan/dev-run.txt may jump the run to a floor and grant
+-- cards, so a demo can be re-recorded without replaying the earlier floors.
+-- Every machine must carry the same file: floor and decks are simulated state.
+local function coop_dev_run_parse()
+    local raw = file("lan/dev-run.txt")
+    if not raw then return nil end
+    local cfg = { cards = {} }
+    local start = 1
+    while start <= #raw do
+        local stop = start
+        while stop <= #raw and sub(raw, stop, stop) ~= "\n" do stop = stop + 1 end
+        local line = sub(raw, start, stop - 1)
+        local key, value = match(line, "^%s*([%a_]+)%s*=%s*(.-)%s*$")
+        if key and value and #value > 0 then
+            if key == "floor" then
+                local n = tonum(value)
+                if n then cfg.floor = n end
+            elseif key == "black" or key == "white" then
+                local cursor = 1
+                while cursor <= #value do
+                    local comma = cursor
+                    while comma <= #value and sub(value, comma, comma) ~= "," do comma = comma + 1 end
+                    local name = sub(value, cursor, comma - 1)
+                    while #name > 0 and sub(name, 1, 1) == " " do name = sub(name, 2) end
+                    while #name > 0 and sub(name, #name, #name) == " " do name = sub(name, 1, #name - 1) end
+                    if #name > 0 then cfg.cards[#cfg.cards + 1] = name end
+                    cursor = comma + 1
+                end
+            end
+        end
+        start = stop + 1
+    end
+    if not cfg.floor and #cfg.cards == 0 then return nil end
+    return cfg
+end
+append("start", function()
+    if not mode or mode.id ~= "coop" then return end
+    local cfg = coop_dev_run_parse()
+    if not cfg then return end
+    local target = max(1, min(11, cfg.floor or mode.lvl))
+    if target > mode.lvl and type(next_floor) == "function" then
+        mode.lvl = target - 1
+        next_floor()
+    end
+    local granted = 0
+    for _, id in ipairs(cfg.cards) do
+        if type(add_card) == "function" and type(CARDS) == "table" then
+            local known = false
+            for _, card in ipairs(CARDS) do
+                if card.id == id then known = true break end
+            end
+            if known then add_card(id); granted = granted + 1 end
+        end
+    end
+    if _log then
+        _log("[COOP DEV RUN] floor=" .. tostr(mode.lvl) .. " granted=" .. tostr(granted)
+            .. " of " .. tostr(#cfg.cards))
+    end
+end, "coop_dev_run")
