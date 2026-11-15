@@ -1,0 +1,33 @@
+Steam P2P integration / Steam P2P 接入（实验）
+
+SteamP2PTunnel: https://github.com/zhMoody/SteamP2PTunnel
+Copyright (c) 2025 Moody_zh. MIT license, included as LICENSE-SteamP2PTunnel.txt.
+This headless derivative reuses its stream packet framing and TCP/P2P design;
+the GUI, chat, updater and unrestricted multi-stream proxy are not included.
+Changes: two-person friend lobby, loopback-only TCP, bounded queues, reliable
+send retries, room validation, file status/stop channel and broker lifecycle.
+The upstream README also includes a non-commercial statement; its relationship
+to the MIT license has not been clarified with the author. Formal release
+permission and a production Steam App ID are not established by this test.
+
+steamworks 0.13.1 / steamworks-sys 0.13.0:
+https://github.com/Noxime/steamworks-rs
+Copyright (c) 2018 Matthew Collins. MIT OR Apache-2.0.
+The same binding licenses apply to steamworks-sys; see licenses/steamworks-*.
+Other Rust dependencies and their exact versions are recorded in source/Cargo.lock.
+Their accompanying license texts are preserved under licenses/ (including
+build-time macro dependencies). Rust standard-library notices are included.
+
+steam_api64.dll is Valve's Steamworks runtime, supplied by steamworks-sys 0.13.0.
+Valve's runtime and services are NOT licensed by the MIT license above.
+https://partner.steamgames.com/doc/sdk/api
+https://partner.steamgames.com/doc/sdk/api/example
+The helper uses example App ID 480 / Spacewar for experimental testing.
+This is not endorsed by Valve or the Shotgun King developers. Inclusion of this
+file does not assert authorization for unrestricted production distribution.
+
+中文说明：上游与 Rust 依赖的许可文本随包保留，修改源码也随包提供。
+Steam API 动态库和 Steam 服务不属于 MIT 授权范围。当前使用示例 App ID 480
+进行实验测试，不表示已获得正式发布授权，也不是游戏官方的 Steam 联机功能。
+上游 README 另有非商业用途声明，正式发布前仍需确认。以上许可不覆盖本模组
+的游戏素材、音效或其他源码，不改变它们各自原有的权利归属。

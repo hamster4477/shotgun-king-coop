@@ -33,6 +33,13 @@ function btnp(k,p,delay,interval)
  return false
 end
 function btnv(k) return k=="lobby_x" and mx or my end
+ctrl_held=false
+steam_files_present=true
+function isfile(path)
+ if string.find(path,"steam-p2p",1,true) then return steam_files_present end
+ return true
+end
+function btn(k,p) if k=="lobby_ctrl" then return ctrl_held end return false end
 function controls()
  return "shoot > m:lb\nmove > k:left\nlobby_back > k:backspace\nlobby_left > k:left\nlobby_right > k:right\nlobby_delete > k:delete"
 end
@@ -261,5 +268,51 @@ assert(string.find(combined,"1/1",1,true) and string.find(combined,"Searching",1
 keys={lobby_escape=true};hooks.online_lobby_input();draw()
 assert(string.find(table.concat(texts,"\n"),"Loopback",1,true))
 assert(type(string.gmatch)=="function" and type(math.ceil)=="function", "Test helpers keep their standard libraries")
+
+-- Developer transport: Ctrl + right-click on the lobby title switches to the
+-- experimental Steam P2P tunnel; ordinary clicks must still do nothing.
+local function last_request()
+    local best,body=0,nil
+    for path,value in pairs(files) do
+        local n=string.match(path,"request%-(%d+)%.txt$")
+        if n and tonumber(n)>best then best=tonumber(n); body=value end
+    end
+    return body
+end
+assert(MODLIST[2].lan_lobby.enter())
+now=60;status("ready",20,60);hooks.online_lobby_input();draw()
+local before_steam=last_request()
+mx,my=100,22
+ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
+assert(string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"gesture must switch the visible transport")
+ctrl_held=false
+click(60,40)
+local host=last_request()
+assert(host and host~=before_steam and string.find(host,"|steamhost|127.0.0.1|",1,true),"host must ask for the Steam tunnel")
+click(200,155);draw()
+assert(not string.find(table.concat(texts,"\n"),"Use public endpoint",1,true),"tunnel settings are not part of this transport")
+now=62;files[base_test.."status.txt"]="LB1|waiting|127.0.0.1|steam:109775244637163549:"..string.rep("d",32).."|none|21|62|END"
+hooks.online_lobby_input();draw()
+click(40,115)
+assert(copied=="SKCOOPS1|109775244637163549|"..string.rep("d",32),"Steam invite must copy as lobby metadata")
+now=64;files[base_test.."status.txt"]="LB1|ready|127.0.0.1|-|none|21|64|END";hooks.online_lobby_input()
+-- The guest pastes the copied invite, exactly as a player would.
+click(250,88)
+click(200,40)
+local join=last_request()
+assert(join and string.find(join,"|steamclient|109775244637163549|",1,true),"guest must ask to join the Steam lobby")
+-- The gesture toggles back to the LAN transport.
+now=66;files[base_test.."status.txt"]="LB1|ready|127.0.0.1|-|none|40|66|END";hooks.online_lobby_input()
+mx,my=100,22
+ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
+assert(not string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"gesture must switch back to the LAN transport")
+-- Without the developer package the gesture must refuse instead of
+-- switching into a transport that cannot start.
+steam_files_present=false
+mx,my=100,22
+ctrl_held=true;keys={lobby_rclick=true};hooks.online_lobby_input();draw()
+assert(not string.find(table.concat(texts,"\n"),"Steam P2P (experimental)",1,true),"missing package must not switch")
+assert(string.find(table.concat(texts,"\n"),"helper missing",1,true),"missing package must explain itself")
+steam_files_present=true
 ''')
-print('PASS: sandboxed multi-line parsing, 5/6/32-room pagination, cap and empty-list clamp')
+print('PASS: sandboxed multi-line parsing, room pagination, and the hidden Steam P2P transport')

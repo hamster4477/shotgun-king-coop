@@ -2,7 +2,7 @@
 local config=file("lan/lobby-config.txt")
 local token=config and match(config,"^LB1|([a-f0-9]+)|END$")
 local base=token and #token==32 and "lan/lobby/"..token.."/" or nil
-local ui={open=false,poll=0,seq=0,port="27841",text="",external="",mapped=false,addresses={},address=1,state="ready",message="",cursor=0,mx=-100,my=-100}
+local ui={open=false,poll=0,seq=0,port="27841",text="",external="",mapped=false,steam=false,addresses={},address=1,state="ready",message="",cursor=0,mx=-100,my=-100}
 local function label(zh,en) return current_lang=="simplified_chinese" and zh or en end
 local function split(s)
     local a={}; local start=1
@@ -68,11 +68,23 @@ local function request(role,ip,port,key)
 end
 local function join_room(text)
     text=match(text or "","^%s*(.-)%s*$") or ""
+    -- Developer Steam P2P invite: the lobby id replaces the address, and the key
+    -- still authenticates the TCP bridge running inside the tunnel.
+    local sid,skey=match(text,"^SKCOOPS1|(%d+)|([a-fA-F0-9]+)$")
+    if sid and skey then
+        if #sid<17 or #sid>20 or #skey~=32 then
+            ui.message=label("Steam 连接码无效，请向房主重新获取","Invalid Steam invite: ask the host for a new code")
+            return
+        end
+        ui.text=text; ui.steam=true; ui.hosting=false
+        request("steamclient",sid,tonum(ui.port) or 27841,skey)
+        return
+    end
     local ip,port,key=match(text,"^SKCOOP1|([A-Za-z0-9.%-]+):(%d+)|([a-fA-F0-9]+)$")
     if not ip or not port or not key or #key~=32 or #text>310 or not public_endpoint(ip..":"..port) then
         ui.message=label("连接码无效，请复制完整连接码","Invalid invite: copy the complete code"); return
     end
-    ui.text=text; ui.hosting=false; request("client",ip,port,key)
+    ui.text=text; ui.steam=false; ui.hosting=false; request("client",ip,port,key)
 end
 local function inside(x,y,w,h)
     return ui.mx>=x and ui.mx<x+w and ui.my>=y and ui.my<y+h
@@ -88,8 +100,16 @@ local function setup()
     defbtn("lobby_left",0,"k:left"); defbtn("lobby_right",0,"k:right")
     defbtn("lobby_home",0,"k:home"); defbtn("lobby_end",0,"k:end")
     defbtn("lobby_delete",0,"k:delete")
+    -- Developer transport toggle: Ctrl + right-click on the title (see _update).
+    defbtn("lobby_rclick",0,"m:rb"); defbtn("lobby_ctrl",0,"k:lctrl, k:rctrl")
 end
 local function live() return ui.alive and time()<ui.alive end
+-- The experimental Steam tunnel is a separate developer package; the gesture is
+-- inert without it so a normal install cannot switch into a broken transport.
+local function steam_available()
+    if type(isfile)~="function" then return false end
+    return isfile("steam-p2p/onlinecoop-steam-tunnel.exe") and isfile("steam-p2p/steam_api64.dll")
+end
 local function close_lobby()
     browsing(false)
     if ui.owned and base then request("cancel","127.0.0.1",27841,"-") end
@@ -230,13 +250,27 @@ prepend("_update",function()
         consume_input(); return
     end
     if available and ready and ui.focus=="text" and btnp("lobby_enter",0) then join_room(ui.text) end
+    -- Developer transport: Ctrl + right-click on the title switches between the
+    -- LAN / virtual-LAN route and the experimental Steam P2P tunnel. It is not
+    -- advertised in the player UI; the Steam tunnel binary ships separately.
+    if ready and inside(MCW/2-132,19,264,10) and btn("lobby_ctrl",0) and btnp("lobby_rclick",0) then
+        -- Refuse the switch when the developer package is absent: the public LAN
+        -- build ships the gesture but not the tunnel binary.
+        if not steam_available() then
+            ui.message=label("缺少 Steam P2P 组件，请使用完整实验包","Steam P2P helper missing: use the full experimental package")
+            consume_input(); return
+        end
+        ui.steam=not ui.steam; ui.focus=nil; ui.message=""
+        _log("[ONLINE LOBBY] dev transport steam="..(ui.steam and "on" or "off"))
+        consume_input(); return
+    end
     if btnp("lobby_escape",0) then
         leave(); return
     elseif btnp("lobby_click",0) then
         local left=MCW/2-132
         if inside(left+198,6,66,18) and ready then browsing(true); ui.room_page=0
         elseif inside(left,148,88,18) then leave(); return
-        elseif inside(left+100,148,164,18) then ui.settings=true; ui.focus=nil; ui.message=""
+        elseif inside(left+100,148,164,18) and not ui.steam then ui.settings=true; ui.focus=nil; ui.message=""
         elseif inside(left,31,124,23) and available and ready then
             local port=tonum(ui.port)
             if ui.mapped and not public_endpoint(ui.external) then
@@ -244,10 +278,10 @@ prepend("_update",function()
             elseif port and port>=1024 and port<=65535 then
                 if ui.mapped then file("lan/public-endpoint.txt",ui.external) end
                 ui.hosting=true
-                request(ui.mapped and "hostmapped" or "host",ui.addresses[ui.address] or "127.0.0.1",port,"-")
+                request(ui.steam and "steamhost" or (ui.mapped and "hostmapped" or "host"),ui.steam and "127.0.0.1" or (ui.addresses[ui.address] or "127.0.0.1"),port,"-")
             else ui.message=label("端口需为 1024～65535","Port must be 1024-65535") end
         elseif inside(left+140,31,124,23) and available and ready then join_room(ui.text)
-        elseif inside(left,61,192,16) and ready then ui.address=ui.address%max(1,#ui.addresses)+1; ui.focus=nil
+        elseif inside(left,61,192,16) and ready and not ui.steam then ui.address=ui.address%max(1,#ui.addresses)+1; ui.focus=nil
         elseif inside(left+199,61,65,16) and ready then focus("port")
         elseif inside(left,82,194,16) and ready then focus("text")
         elseif inside(left+200,82,64,16) and ready then
@@ -255,6 +289,13 @@ prepend("_update",function()
             if #pasted<=310 then ui.text=pasted; ui.message=""; focus("text")
             else ui.message=label("连接码过长，请复制完整有效的连接码","Invite too long: copy a valid complete code") end
         elseif inside(left,108,124,20) and ui.invite and ui.invite~="-" then
+            -- Steam invites carry a lobby id instead of an address.
+            local sid,skey=match(ui.invite,"^steam:(%d+):([a-f0-9]+)$")
+            if sid and skey then
+                clipboard("SKCOOPS1|"..sid.."|"..skey)
+                ui.message=label("Steam 连接码已复制，发给好友","Steam invite copied: send it to your friend")
+                consume_input(); return
+            end
             local ip,port,key=match(ui.invite,"^([A-Za-z0-9.%-]+):(%d+):([a-f0-9]+)$")
             if ui.hosting and ui.mapped then
                 ip,port=public_endpoint(ui.external)
@@ -264,7 +305,9 @@ prepend("_update",function()
             if ip then clipboard("SKCOOP1|"..ip..":"..port.."|"..key); ui.message=label("连接码已复制，发给朋友即可","Invite copied: send it to your friend") end
         elseif inside(left+140,108,124,20) and available then
             if ready and ui.last_request then
-                local r=ui.last_request; ui.hosting=r[1]~="client"; request(r[1],r[2],r[3],r[4])
+                local r=ui.last_request
+                ui.hosting=r[1]~="client" and r[1]~="steamclient"
+                request(r[1],r[2],r[3],r[4])
             else request("cancel","127.0.0.1",27841,"-") end
         else ui.focus=nil end
     end
@@ -342,9 +385,15 @@ append("_draw",function()
     button(label("附近房间","Nearby"),left+198,6,66,18)
     button(label("创建房间","Create room"),left,31,124,23)
     button(label("加入","Join"),left+140,31,124,23)
-    lprint(label("本地：","Local: ")..(ui.addresses[ui.address] or "...").." >",left,64,3)
-    local address=ui.addresses[ui.address]
-    lprint(ui.adapters[address] or (address=="127.0.0.1" and label("仅本机","This PC only") or ""),left,74,3)
+    if ui.steam then
+        -- Developer transport: address and tunnel settings do not apply.
+        lprint(label("连接方式：Steam P2P（实验）","Connection: Steam P2P (experimental)"),left,64,3)
+        lprint(label("Steam 好友联机 / App ID 480","Steam friends / App ID 480"),left,74,3)
+    else
+        lprint(label("本地：","Local: ")..(ui.addresses[ui.address] or "...").." >",left,64,3)
+        local address=ui.addresses[ui.address]
+        lprint(ui.adapters[address] or (address=="127.0.0.1" and label("仅本机","This PC only") or ""),left,74,3)
+    end
     lprint(label("端口","Port"),left+199,64,3)
     field("port",left+226,60,38,5)
     field("text",left,82,194,45,label("输入或粘贴连接码，再点击加入","Enter / paste invite, then Join"))
@@ -366,16 +415,21 @@ append("_draw",function()
             dns=label("域名无法解析，请检查穿透地址","Cannot resolve hostname: check tunnel address"),
             disconnected=label("对方已断开，请双方重新创建和加入","Peer disconnected: create and join a new room"),
             handshake=label("握手超时，请核对端口和双方助手","Handshake timed out: check port and both helpers"),
-            busy=label("连接仍在运行，请先取消","Connection still active: cancel first")
+            busy=label("连接仍在运行，请先取消","Connection still active: cancel first"),
+            steammissing=label("缺少 Steam P2P 组件，请使用完整实验包","Steam P2P helper missing: use the full experimental package"),
+            steam=label("Steam 连接失败：双方需用不同账号登录并互为好友","Steam link failed: sign in with different accounts and add each other")
         }
         message=errors[ui.error] or message
     end
     if not live() then message=label("助手未启动，请通过联机启动器运行","Use an Online Co-op launcher to enable networking") end
     lprint(message,MCW/2,136,4,1)
     button(label("返回","Back"),left,148,88,18)
-    button(ui.mapped and label("穿透设置：已开启","Tunnel settings: ON") or label("穿透设置（可选）","Tunnel settings (optional)"),left+100,148,164,18)
+    button(ui.steam and label("穿透设置：不适用","Tunnel settings: n/a")
+        or ui.mapped and label("穿透设置：已开启","Tunnel settings: ON")
+        or label("穿透设置（可选）","Tunnel settings (optional)"),left+100,148,164,18)
     local help=live() and label("多网卡可点地址切换；端口默认无需修改","Click address to switch adapter; keep the default port")
         or label("启动方式与 Steam 设置见 README_zh.md","See README.md for launchers and Steam setup")
     if ui.mapped then help=label("TCP 隧道本地地址/端口应与上方一致","TCP tunnel target must match Local address / port") end
+    if ui.steam then help=label("双方登录 Steam 并互加好友；保留原有连接方式","Sign in to Steam and add each other; LAN remains available") end
     lprint(help,MCW/2,170,3,1)
 end,"online_lobby_draw")

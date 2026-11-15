@@ -29,6 +29,8 @@ def release_files(root=ROOT):
             raise ValueError(f'Diagnostic file in release: {name}')
         if rel.parts[0] == 'lan' and name not in ('lan/LanTransport.cs', 'lan/LanDiscovery.cs'):
             raise ValueError(f'Unexpected LAN runtime file in release: {name}')
+        if rel.parts[0] == 'steam-p2p':
+            raise ValueError(f'Experimental Steam P2P files must stay out of the release: {name}')
         result.append((name, path))
     return result
 
