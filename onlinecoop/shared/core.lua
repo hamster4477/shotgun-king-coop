@@ -4990,6 +4990,28 @@ function start()
     next_floor()
 end
 
+-- Local demo helper: "floor=CardId" lines in lan/dev-demo-cards.txt force that
+-- floor's level-up offers. Plain reads only, so it works in the mod sandbox; a
+-- network guest never applies it because the host owns the offers.
+local function coop_demo_card(floor)
+    if mode.net and mode.net.role == "client" then return nil end
+    local raw = file("lan/dev-demo-cards.txt")
+    if not raw then return nil end
+    local want = tostr(floor)
+    local start = 1
+    while start <= #raw do
+        local stop = start
+        while stop <= #raw and sub(raw, stop, stop) ~= "\n" do stop = stop + 1 end
+        local f, id = match(sub(raw, start, stop - 1), "^(%d+)%s*=%s*([%w][%w ]*)")
+        if f == want and id then
+            while #id > 0 and sub(id, #id, #id) == " " do id = sub(id, 1, #id - 1) end
+            if #id > 0 then return id end
+        end
+        start = stop + 1
+    end
+    return nil
+end
+
 function next_floor()
     mode.lvl = mode.lvl + 1
     -- Set this before new_level creates the board and dispatches its opening
@@ -5043,6 +5065,20 @@ function grow()
         if mode.lvl == 3 then
             for i = 1, 2 do
                 data.choices[i][2].id = "Homecoming"
+            end
+        end
+        -- Demo aid for local recordings: lan/dev-demo-cards.txt may map a floor
+        -- to a card id ("2=Revolution", "3=Guillotine"). The file is local and the
+        -- host applies it, so the guest needs nothing: the host owns the level-up
+        -- offers and the guest only echoes the chosen button index. Delete the
+        -- file and the original pool draw comes back unchanged.
+        do
+            local demo = coop_demo_card(mode.lvl)
+            if demo then
+                for i = 1, 2 do
+                    for j = 1, 2 do data.choices[i][j].id = demo end
+                end
+                if _log then _log("[COOP DEMO] forced card " .. demo .. " on floor " .. tostr(mode.lvl)) end
             end
         end
         -- Keep native team constraints: explicit IDs bypass pool removal and
