@@ -92,10 +92,10 @@ end,"coop_dev_wild_menu_targets")
 append("_update",function()
 
     if not coop_dev_bound then return end
-    if type(btnp)~="function" or not btnp("coop_dev_mb") then return end
+    if type(btnp)~="function" or not btnp("coop_dev_mb", 0) then return end
     -- One press must queue one pair: consume it here, or a held middle button
     -- repeats every frame and fills the cap immediately.
-    if type(btnclr)=="function" then btnclr("coop_dev_mb") end
+    if type(btnclr)=="function" then btnclr("coop_dev_mb", 0) end
     if type(menu)~="table" then
         if _log then _log("[COOP] dev mid pressed with no menu") end
         return

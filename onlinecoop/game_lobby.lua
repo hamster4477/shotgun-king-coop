@@ -93,6 +93,9 @@ local function button(text,x,y,w,h)
     rectfill(x,y,x+w,y+h,inside(x,y,w,h) and 3 or 2); rect(x,y,x+w,y+h,3)
     lprint(text,x+w/2,y+5,4,1)
 end
+-- Set once setup() has registered the lobby buttons: btnclr on an unknown
+-- button is fatal, and close_lobby can run before the first setup().
+local lobby_defined=false
 local function setup()
     defbtn("lobby_click",0,"m:lb"); defbtn("lobby_x",0,"m:x"); defbtn("lobby_y",0,"m:y")
     defbtn("lobby_back",0,"k:backspace"); defbtn("lobby_enter",0,"k:return")
@@ -102,6 +105,7 @@ local function setup()
     defbtn("lobby_delete",0,"k:delete")
     -- Developer transport toggle: Ctrl + right-click on the title (see _update).
     defbtn("lobby_rclick",0,"m:rb"); defbtn("lobby_ctrl",0,"k:lctrl, k:rctrl")
+    lobby_defined=true
 end
 local function live() return ui.alive and time()<ui.alive end
 -- The experimental Steam tunnel is a separate developer package; the gesture is
@@ -110,11 +114,34 @@ local function steam_available()
     if type(isfile)~="function" then return false end
     return isfile("steam-p2p/onlinecoop-steam-tunnel.exe") and isfile("steam-p2p/steam_api64.dll")
 end
+
+-- Never call btnclr() with no argument: it walks every player and the lobby
+-- buttons exist for player 0 only, so the engine raises "Button ... for player 1
+-- doesn't exist" and the game quits. Clear our own buttons for player 0 and the
+-- game's controls explicitly instead.
+local lobby_buttons={"lobby_click","lobby_enter","lobby_escape","lobby_back",
+    "lobby_left","lobby_right","lobby_home","lobby_end","lobby_delete","lobby_rclick"}
+local function clear_game_input()
+    -- Player 0 only: the lobby is a single-player menu, and controls(nil,1)
+    -- returns a scheme whose names are not all defined for player 1, which makes
+    -- btnclr report "Button ... for player 1 doesn't exist" and quit the game.
+    for name in each_match(controls(nil,0) or "","(%S+)%s*>") do
+        if sub(name,1,6)~="lobby_" then btnclr(name,0) end
+    end
+end
+local function clear_lobby_input()
+    clear_game_input()
+    -- btnclr on an unknown button is fatal, and close_lobby can run before the
+    -- first setup(), so only clear the lobby buttons once they are defined.
+    if lobby_defined then
+        for _,name in ipairs(lobby_buttons) do btnclr(name,0) end
+    end
+end
 local function close_lobby()
     browsing(false)
     if ui.owned and base then request("cancel","127.0.0.1",27841,"-") end
     ui.open=false; ui.focus=nil; ui.entering=false; ui.settings=false
-    catchtxt(); btnclr()
+    catchtxt(); clear_lobby_input()
 end
 local function leave()
     close_lobby()
@@ -127,7 +154,7 @@ local function enter(entry)
     if ui.entering then ui.entering=false; return false end
     -- Keep the existing preconnected command-line/local-test entry usable.
     if not live() and onlinecoop_lan and onlinecoop_lan.status=="connected" then return false end
-    ui.open=true; ui.settings=false; ui.focus=nil; ui.message=""; setup(); catchtxt(); btnclr()
+    ui.open=true; ui.settings=false; ui.focus=nil; ui.message=""; setup(); catchtxt(); clear_lobby_input()
     -- One-time reminder when the lobby opens without a helper: the LAN modes are
     -- always listed, but hosting and joining need the Online Co-op launcher.
     ui.notice_until = (ui.alive and time()<ui.alive) and nil or (time()+6)
@@ -136,19 +163,23 @@ local function enter(entry)
     return true
 end
 if coop_mod_index then MODLIST[coop_mod_index].lan_lobby={enter=enter} end
-append("init_menu",function() close_lobby(); setup() end,"online_lobby_controls")
+append("init_menu",function() setup(); close_lobby() end,"online_lobby_controls")
 local function focus(field)
     ui.focus=field; ui.cursor=#ui[field]; ui.blink=time(); catchtxt()
 end
 local repeat_keys={lobby_back=true,lobby_delete=true,lobby_left=true,lobby_right=true}
 local function consume_input()
-    if not ui.focus then btnclr(); return end
+    if not ui.focus then
+        -- Keep the developer gesture's Ctrl readable: btnclr suppresses a cleared
+        -- key until it is released, so the modifier check would never be true.
+        clear_game_input()
+        btnclr("lobby_click",0); btnclr("lobby_enter",0); btnclr("lobby_escape",0)
+        return
+    end
     -- Global btnclr suppresses held keys until release, including key repeat.
     -- Consume game controls while retaining the four editing keys.
-    for player=0,1 do
-        for name in each_match(controls(nil,player) or "","(%S+)%s*>") do
-            if player~=0 or not repeat_keys[name] then btnclr(name,player) end
-        end
+    for name in each_match(controls(nil,0) or "","(%S+)%s*>") do
+        if sub(name,1,6)~="lobby_" and not repeat_keys[name] then btnclr(name,0) end
     end
 end
 local function edit_input(text)
@@ -203,7 +234,7 @@ prepend("_update",function()
     local available=live()
     ui.mx,ui.my=btnv("lobby_x",0),btnv("lobby_y",0)
     if available and ui.state=="connected" and onlinecoop_lan.status=="connected" then
-        ui.open=false; ui.entering=true; ui.focus=nil; catchtxt(); btnclr()
+        ui.open=false; ui.entering=true; ui.focus=nil; catchtxt(); clear_lobby_input()
         _log("[ONLINE LOBBY] enter role="..onlinecoop_lan.role)
         if coop_mod_index then set_mode(coop_mod_index..". "..(ui.entry or "onlinecoop")) end
         return
@@ -224,7 +255,7 @@ prepend("_update",function()
                 end
             end
         end
-        btnclr(); return
+        clear_lobby_input(); return
     end
     local text=catchtxt()
     if ready or (ui.state=="waiting" and ui.focus=="external") then edit_input(text) end
@@ -253,7 +284,7 @@ prepend("_update",function()
     -- Developer transport: Ctrl + right-click on the title switches between the
     -- LAN / virtual-LAN route and the experimental Steam P2P tunnel. It is not
     -- advertised in the player UI; the Steam tunnel binary ships separately.
-    if ready and inside(MCW/2-132,19,264,10) and btn("lobby_ctrl",0) and btnp("lobby_rclick",0) then
+    if ready and inside(MCW/2-132,4,264,26) and btn("lobby_ctrl",0) and btnp("lobby_rclick",0) then
         -- Refuse the switch when the developer package is absent: the public LAN
         -- build ships the gesture but not the tunnel binary.
         if not steam_available() then
