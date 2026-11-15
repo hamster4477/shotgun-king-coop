@@ -5834,8 +5834,19 @@ local function coop_dev_run_parse()
     return cfg
 end
 -- Applied from _update: the sandbox forbids assigning to existing globals such as
--- `start`, so a start hook aborts the run. Wait for the first live board, then jump
--- and grant once per run.
+-- `start`, so a start hook aborts the run. The floor is rewritten before the first
+-- board is built; jumping later via next_floor() crashes inside code.lua because
+-- `hero` does not exist yet.
+prepend("new_level", function()
+    if not mode or mode.id ~= "coop" or mode.dev_run_applied then return end
+    local cfg = coop_dev_run_parse()
+    if not cfg or not cfg.floor then return end
+    local target = max(1, min(11, cfg.floor))
+    if mode.lvl <= 1 and target > mode.lvl then
+        mode.lvl = target
+        if _log then _log("[COOP DEV RUN] floor override " .. tostr(target)) end
+    end
+end, "coop_dev_run_floor")
 append("_update", function()
     if mode.dev_run_applied or not mode or mode.id ~= "coop" then return end
     if not (hero and hero.sq) then return end
@@ -5843,10 +5854,9 @@ append("_update", function()
     if not cfg then mode.dev_run_applied = true return end
     mode.dev_run_applied = true
     local target = max(1, min(11, cfg.floor or mode.lvl))
-    if target > mode.lvl and type(next_floor) == "function" then
-        mode.lvl = target - 1
-        next_floor()
-    end
+    -- The floor itself is set by the new_level hook above; calling next_floor()
+    -- here would re-enter the board builder before `hero` exists.
+    if mode.lvl ~= target then return end
     local granted = 0
     for _, id in ipairs(cfg.cards) do
         if type(add_card) == "function" and type(CARDS) == "table" then
