@@ -3,6 +3,9 @@
 Recorded 2026-11-14 from the live Steam Workshop page. **This is the text that must stay
 on the page.** Content uploads must not change it.
 
+Only the **English** block below is published. The 简体中文 block is a reference
+translation and is never uploaded: the page description stays English-only.
+
 Why this file exists: the game's in-game upload button pushes `info.lua`'s `description`
 to the item, replacing whatever the author wrote on the page. **Every content upload also
 replaces the description with whatever that run sends, so an upload without a description
