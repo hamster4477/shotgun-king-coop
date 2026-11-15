@@ -174,6 +174,31 @@ append("_update",function()
     else
         n.king_lock_since=nil
     end
+    -- Recovery: a Courteous Jousting extra action can end on the square of the
+    -- Knight it just killed, after which the enemy-turn handshake stays pending
+    -- with nothing animating and the white army never moves (observed twice).
+    if mode.coop_manual_king_enemy_turn_pending
+        and not mode.coop_pause_menu_open
+        and not (hero and hero.in_move)
+        and not coop_white_move_animation_pending()
+        and not coop_floor_is_ending()
+        and not mode.coop_native_turn_in_progress
+        and (type(events)~="table" or #events==0) then
+        n.enemy_turn_since=n.enemy_turn_since or time()
+        if time()-n.enemy_turn_since>=6 then
+            n.enemy_turn_since=nil
+            mode.coop_manual_king_enemy_turn_pending=nil
+            mode.coop_king_move_input_locked=nil
+            mode.coop_extra_king_action_pending=nil
+            if _log then
+                _log("[COOP UNSTICK] enemy-turn handshake cleared after 6s"
+                    .." floor="..coop_string(mode.lvl).." turn="..coop_string(mode.turns)
+                    .." clip="..tostr(n.clip_host and n.clip_host.id or "-"))
+            end
+        end
+    else
+        n.enemy_turn_since=nil
+    end
 end,"online_state_dump")
 end
 local function abort_clip(reason)
