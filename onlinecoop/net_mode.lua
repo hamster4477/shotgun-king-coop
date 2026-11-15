@@ -1,5 +1,5 @@
 -- Included in the mode environment, not run as received network code.
-local ONLINE_BUILD = "unified72lan1"
+local ONLINE_BUILD = "unified72lan2"
 local function net_join(values,separator)
     local text=""
     for i,v in ipairs(values) do text=text .. (i>1 and separator or "") .. v end
@@ -148,7 +148,7 @@ function onlinecoop_net_state()
         for i,soul in ipairs(souls or {}) do
             if i<=12 then
                 if soul==mode.coop_knight_selected_soul then selected=i end
-                slots[#slots+1]=net_join({i,net_int(soul.id),onlinecoop_net_soul_usable(soul) and 1 or 0},",")
+                slots[#slots+1]=net_join({i,net_int(soul.id),onlinecoop_net_soul_usable(soul) and 1 or 0,soul.id~=nil and 1 or 0},",")
             end
         end
         -- Catalog IDs identify card types, not owned copies. Read native slots
@@ -238,10 +238,10 @@ function onlinecoop_net_snapshot(payload)
             if #records>(index==7 and 12 or (index==8 and 256 or 64)) then return false end
             local seen={}
             for _,record in ipairs(records) do
-                local p=onlinecoop_net_numbers(record,3,1000000)
+                local p=onlinecoop_net_numbers(record,index==7 and 4 or 3,1000000)
                 if not p then return false end
                 if index==7 then
-                    if p[1]<1 or p[1]>12 or p[2]>5 or p[3]>1 or seen[p[1]] then return false end
+                    if p[1]<1 or p[1]>12 or p[2]>5 or p[3]>1 or p[4]>1 or seen[p[1]] then return false end
                     snapshot.souls[#snapshot.souls+1]=p
                 elseif index==8 then
                     if not CARDS[p[1]] or p[2]>199 or p[3]>1 then return false end

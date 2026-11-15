@@ -554,7 +554,7 @@ function onlinecoop_net_draw_client()
     lprint(net_label("备弹 ","Ammo ")..ui[3],boss_present and left+100 or left+54,21,3)
     local gun=weapons and weapons[ui[17]+1]
     if gun then lprint(lang[gun.name] or gun.name,left,10,4) end
-    spritesheet("weapons"); sspr(96,ui[17]*16,24,8,left+14,18); spritesheet("gfx")
+    spritesheet("weapons"); sspr(96,(ui[17]+1)*16,24,8,left+14,18); spritesheet("gfx")
     if hover_piece then
         rectfill(left-39,47,left-3,149,1)
         lprint(onlinecoop_net_piece_name(hover_piece),left-21,51,4,1)
@@ -575,7 +575,7 @@ function onlinecoop_net_draw_client()
         if x then
             local selected=ui[11]==slot[1]
             coop_draw_empty_soul_slot(nil,x,y)
-            if slot[2]>0 and not selected then
+            if slot[4]==1 and not selected then
                 spritesheet("gfx"); sprgrid(8,8)
                 -- Original soul-card background at (0,72); its glyph is overlaid below.
                 sspr(0,72,24,32,x,y)
@@ -619,8 +619,11 @@ function onlinecoop_net_draw_client()
     elseif n.last_result and n.last_result~="ok" and n.last_result~="duplicate" and time()-(n.result_at or 0)<2 then
         hint=net_label("状态已变化，请按新提示操作","State changed; choose from the new targets")
     elseif hover_soul then
-        local names={[0]=net_label("空灵魂槽","Empty soul slot"),[1]=net_label("骑士灵魂","Knight soul"),[2]=net_label("主教灵魂","Bishop soul"),[3]=net_label("城堡灵魂","Rook soul")}
-        hint=names[hover_soul[2]] or net_label("灵魂","Soul")
+        -- id 0 is the soldier soul that Cannon Fodder drops; column 4 tells an
+        -- empty slot apart from it.
+        local names={[0]=net_label("士兵灵魂","Soldier soul"),[1]=net_label("骑士灵魂","Knight soul"),[2]=net_label("主教灵魂","Bishop soul"),[3]=net_label("城堡灵魂","Rook soul")}
+        hint=hover_soul[4]==1 and (names[hover_soul[2]] or net_label("灵魂","Soul"))
+            or net_label("空灵魂槽","Empty soul slot")
         if ui[12]==1 and hover_soul[2]==1 then hint=hint..net_label("：点击复活黑骑士"," : revive Knight")
         elseif hover_soul[3]==1 and phase==2 then hint=hint..net_label("：选择后点击目标格"," : select, then choose target") end
     elseif hovered_card then hint=lang[hovered_card.id] or hovered_card.id
