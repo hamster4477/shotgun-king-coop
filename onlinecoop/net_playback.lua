@@ -121,6 +121,27 @@ append("_update",function()
     else
         n.stall_since=nil; n.stall_logs=nil; n.stall_next=nil
     end
+    -- Recovery: a Knight left not-ready with nothing animating blocks every input
+    -- (phase 3 forever). Normal not-ready lasts a frame or two, so a couple of
+    -- quiet seconds means the transition that should clear it never ran.
+    local knight=mode.coop_knight
+    if mode.coop_selected=="knight" and knight and knight.ready==false
+        and not mode.coop_pause_menu_open
+        and (type(events)~="table" or #events==0)
+        and not (hero and hero.in_move)
+        and not mode.coop_native_turn_in_progress then
+        n.knight_ready_since=n.knight_ready_since or time()
+        if time()-n.knight_ready_since>=2.5 then
+            n.knight_ready_since=nil
+            knight.ready=true
+            if _log then
+                _log("[COOP UNSTICK] Knight readied after 2.5s with no animation"
+                    .." floor="..coop_string(mode.lvl).." turn="..coop_string(mode.turns))
+            end
+        end
+    else
+        n.knight_ready_since=nil
+    end
 end,"online_state_dump")
 end
 local function abort_clip(reason)
