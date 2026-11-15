@@ -69,11 +69,29 @@ try {
     } finally {$self.ProcessorAffinity=$old}
     $game.WaitForExit()
 } finally {
-    if(Test-Path -LiteralPath $box){[IO.File]::WriteAllText((Join-Path $box 'stop.txt'),'stop',$utf8)}
-    if($broker -and !$broker.HasExited -and !$broker.WaitForExit(5000)){Stop-Process -Id $broker.Id}
-    if($listWritten -and (Test-Path -LiteralPath $list) -and [IO.File]::ReadAllText($list) -eq $managed) {
-        if($hadList){[IO.File]::WriteAllBytes($list,$backup)}
-        else {Remove-Item -LiteralPath $list}
+    # Teardown must never turn a normal game exit into a launcher error: every
+    # step here races with processes that may already be gone.
+    try {
+        if(Test-Path -LiteralPath $box){[IO.File]::WriteAllText((Join-Path $box 'stop.txt'),'stop',$utf8)}
+        if($broker){
+            try {
+                if(!$broker.HasExited -and !$broker.WaitForExit(5000)){Stop-Process -Id $broker.Id -Force -ErrorAction SilentlyContinue}
+            } catch {}
+        }
+        if($listWritten -and (Test-Path -LiteralPath $list)) {
+            # Give the file back exactly as it was. The game rewrites modlist.lua
+            # in its own formatting (and prunes entries it cannot find), so a
+            # content comparison here would silently skip the restore and leave
+            # the player's other mods disabled.
+            if($hadList){[IO.File]::WriteAllBytes($list,$backup)}
+            else {Remove-Item -LiteralPath $list -ErrorAction SilentlyContinue}
+        }
+    } catch {
+        Write-Warning ("Cleanup warning: " + $_.Exception.Message)
+    } finally {
+        if($lock){$lock.Dispose()}
     }
-    $lock.Dispose()
 }
+# Reaching here means the game ran and was closed normally: report success so the
+# calling launcher does not show a failure prompt.
+exit 0
