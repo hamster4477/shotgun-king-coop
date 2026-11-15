@@ -58,8 +58,14 @@ try {
             [long]$mask=1; while(($old.ToInt64() -band $mask) -eq 0){$mask=$mask -shl 1}
             $self.ProcessorAffinity=[IntPtr]$mask
         }
-        # User explicitly launched the game: its window is intended to be visible.
-        $game=Start-Process -FilePath $exe -WorkingDirectory $root -PassThru
+        # Launch with CreateProcess, not Start-Process: Start-Process goes through
+        # ShellExecute, which runs the Attachment Manager publisher check and pops
+        # "The publisher could not be verified" for this unsigned exe. Steam starts
+        # the game directly, so players never see that dialog; match Steam here.
+        $psi=[Diagnostics.ProcessStartInfo]::new($exe)
+        $psi.WorkingDirectory=$root
+        $psi.UseShellExecute=$false
+        $game=[Diagnostics.Process]::Start($psi)
     } finally {$self.ProcessorAffinity=$old}
     $game.WaitForExit()
 } finally {
