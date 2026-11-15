@@ -98,6 +98,9 @@ local function coop_state_line()
         .." clip_client="..tostr(n.clip_client and n.clip_client.id or "-")
         .." disrupt="..tostr(disrupt_menu and 1 or 0)
         .." draft="..tostr(n.draft and n.draft.active and 1 or 0)
+        .." penta="..tostr(mode.coop_penta_bonus_pending and 1 or 0)
+        .." extra="..tostr(mode.coop_extra_king_action_pending and 1 or 0)
+        .." manual_enemy="..tostr(mode.coop_manual_king_enemy_turn_pending and 1 or 0)
 end
 if type(append)=="function" then
 append("_update",function()
@@ -141,6 +144,35 @@ append("_update",function()
         end
     else
         n.knight_ready_since=nil
+    end
+    -- Recovery: the King's post-move input lock is normally released by the
+    -- Knight hand-off or the extra-action path. If neither runs, every input
+    -- stays blocked and the host keeps recording a clip that never closes.
+    -- Only fire when nothing is actually animating, so a real move, a white
+    -- move animation or a floor transition can never be cut.
+    local king_locked=mode.coop_king_move_input_locked
+    if king_locked and mode.coop_selected=="king"
+        and not mode.coop_pause_menu_open
+        and not (hero and hero.in_move)
+        and not coop_white_move_animation_pending()
+        and not coop_floor_is_ending()
+        and not mode.coop_native_turn_in_progress
+        and not mode.coop_auto_select_knight_pending
+        and not mode.coop_manual_king_enemy_turn_pending
+        and (type(events)~="table" or #events==0) then
+        n.king_lock_since=n.king_lock_since or time()
+        if time()-n.king_lock_since>=3 then
+            n.king_lock_since=nil
+            mode.coop_king_move_input_locked=nil
+            mode.coop_extra_king_action_pending=nil
+            if _log then
+                _log("[COOP UNSTICK] King input lock released after 3s with no animation"
+                    .." floor="..coop_string(mode.lvl).." turn="..coop_string(mode.turns)
+                    .." clip="..tostr(n.clip_host and n.clip_host.id or "-"))
+            end
+        end
+    else
+        n.king_lock_since=nil
     end
 end,"online_state_dump")
 end
