@@ -71,7 +71,8 @@ end
 -- Manual escape hatch: F5 drops an in-flight clip immediately on either side.
 -- The host owns the clips, so it cancels and tells the guest; a guest that gives
 -- up asks the host to stop waiting with X1.
-defbtn("online_abort_clip",0,"k:f5")
+local abort_bound=false
+if type(defbtn)=="function" then defbtn("online_abort_clip",0,"k:f5"); abort_bound=true end
 local function abort_clip(reason)
     local n=mode.net
     if not n or not n.peer_ok then return false end
@@ -99,7 +100,7 @@ end
 -- would wait for frames that never arrive. Give the choice priority after a grace
 -- period and cancel the stalled clip on both sides. Boss cinematics are not
 -- choices, so their complete animation is never cut short by this.
-local CHOICE_CLIP_GIVEUP=8
+local CHOICE_CLIP_GIVEUP=25
 local function choice_clip_watchdog()
     local n=mode.net
     if not n or not n.peer_ok then return end
@@ -270,7 +271,7 @@ end
 function onlinecoop_playback_host_tick()
     local n=mode.net
     if n.role~="host" or not n.peer_ok then return end
-    if btnp("online_abort_clip",0) then abort_clip("manual") end
+    if abort_bound and btnp("online_abort_clip",0) then abort_clip("manual") end
     choice_clip_watchdog()
     local active,moving=animation_state()
     local c=n.clip_host
@@ -413,7 +414,7 @@ function onlinecoop_playback_defer(payload)
 end
 function onlinecoop_playback_client_tick()
     local n=mode.net
-    if n.role=="client" and n.peer_ok and btnp("online_abort_clip",0) then abort_clip("manual") end
+    if abort_bound and n.role=="client" and n.peer_ok and btnp("online_abort_clip",0) then abort_clip("manual") end
     choice_clip_watchdog()
     local c=n.clip_client
     if n.role~="client" or n.cg_active or not c then return end
