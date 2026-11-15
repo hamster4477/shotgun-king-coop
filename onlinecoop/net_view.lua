@@ -3,6 +3,15 @@
 local function net_label(zh,en)
     return current_lang=="simplified_chinese" and zh or en
 end
+-- Phase captions for the 2P badge and the paused/disconnected banner. These must
+-- stay defined: the banner indexes them by phase, and a nil table crashed the game
+-- the moment a peer disconnected.
+local zh={[0]="等待房主开始",[1]="黑王行动",[2]="黑骑士行动",[3]="行动结算中",
+    [4]="房主正在结算楼层",[5]="对局结束",[6]="房主已暂停",
+    [7]="连接中断，请双方重启",[8]="正在核对版本"}
+local en={[0]="Waiting for host",[1]="King's action",[2]="Knight's action",[3]="Resolving",
+    [4]="Host resolving floor",[5]="Game over",[6]="Host paused",
+    [7]="Disconnected: restart both",[8]="Checking version"}
 local function connection_label(n)
     local state=onlinecoop_lan and onlinecoop_lan.status or "idle"
     if state=="error" or state=="stopped" then
