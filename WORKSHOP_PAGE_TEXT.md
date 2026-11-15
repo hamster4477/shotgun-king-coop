@@ -4,10 +4,12 @@ Recorded 2026-11-14 from the live Steam Workshop page. **This is the text that m
 on the page.** Content uploads must not change it.
 
 Why this file exists: the game's in-game upload button pushes `info.lua`'s `description`
-to the item, replacing whatever the author wrote on the page. Uploading content with
-`diagnostics/Publish-Workshop3833493529.ps1` does not touch the description (it only calls
-`SetItemContent` + `SubmitItemUpdate`). If the page text is ever replaced, restore it from
-the two blocks below.
+to the item, replacing whatever the author wrote on the page. **Every content upload also
+replaces the description with whatever that run sends, so an upload without a description
+wipes the page** — confirmed twice on 2026-11-15. `diagnostics/Publish-Workshop3833493529.ps1`
+therefore always sends this text (it defaults to `diagnostics/workshop-description.txt`,
+built by `tools/build_workshop_description.py`) and refuses to run without it. If the page
+text is ever replaced, restore it with `diagnostics/Set-WorkshopDescription.ps1`.
 
 ## English
 
