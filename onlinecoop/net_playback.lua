@@ -195,6 +195,20 @@ local function abort_clip(reason)
         _log("[CLIP ABORT] client dropped id="..id.." ("..reason..")")
         return true
     end
+    -- Nothing was in flight: make F5 a real escape hatch by releasing a stuck
+    -- King input lock too, under the same guards the watchdog uses.
+    if mode.coop_king_move_input_locked
+        and not mode.coop_pause_menu_open
+        and not (hero and hero.in_move)
+        and not coop_white_move_animation_pending()
+        and not coop_floor_is_ending()
+        and not mode.coop_native_turn_in_progress
+        and (type(events)~="table" or #events==0) then
+        mode.coop_king_move_input_locked=nil
+        mode.coop_extra_king_action_pending=nil
+        if _log then _log("[COOP UNSTICK] F5 released the King input lock ("..reason..")") end
+        return true
+    end
     return false
 end
 
