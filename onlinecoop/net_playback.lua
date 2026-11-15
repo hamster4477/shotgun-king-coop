@@ -67,6 +67,38 @@ function onlinecoop_playback_waiting_choice()
         or n.native_choice or (n.campaign_scene and n.campaign_scene.kind~=0)
         or (type(onlinecoop_choices_live)=="function" and onlinecoop_choices_live())
 end
+
+-- A native choice waits for input, so a clip that was streaming when it opened can
+-- never be acknowledged: the host would wait for the guest forever and the guest
+-- would wait for frames that never arrive. Give the choice priority after a grace
+-- period and cancel the stalled clip on both sides. Boss cinematics are not
+-- choices, so their complete animation is never cut short by this.
+local CHOICE_CLIP_GIVEUP=8
+local function choice_clip_watchdog()
+    local n=mode.net
+    if not n or not n.peer_ok then return end
+    if not (n.clip_host or n.clip_client) or not onlinecoop_playback_waiting_choice() then
+        n.choice_clip_since=nil
+        return
+    end
+    local now=time()
+    if not n.choice_clip_since then n.choice_clip_since=now; return end
+    if now-n.choice_clip_since<CHOICE_CLIP_GIVEUP then return end
+    n.choice_clip_since=nil
+    if n.clip_host then
+        local id=n.clip_host.id
+        send("X2,"..id)
+        n.clip_host=nil; n.board_last_pixels=nil; n.board_capture_at=nil
+        _log("[CLIP GIVEUP] host abandoned id="..id.." after "..CHOICE_CLIP_GIVEUP.."s in a native choice")
+    end
+    if n.clip_client then
+        local id=n.clip_client.id
+        if (n.clip_received or 0)<id then n.clip_received=id end
+        n.clip_client=nil
+        onlinecoop_events_clear(n)
+        _log("[CLIP GIVEUP] client abandoned id="..id.." after "..CHOICE_CLIP_GIVEUP.."s in a native choice")
+    end
+end
 local function animation_state()
     local n=mode.net
     local active=not n.cg_active and not n.cg_returned and onlinecoop_presentation_active()
@@ -224,6 +256,7 @@ end
 function onlinecoop_playback_host_tick()
     local n=mode.net
     if n.role~="host" or not n.peer_ok then return end
+    choice_clip_watchdog()
     local active,moving=animation_state()
     local c=n.clip_host
     if not c and moving and n.playback_mode==1 then
@@ -276,6 +309,16 @@ end
 
 function onlinecoop_playback_receive(payload)
     local n=mode.net; local tag=sub(payload,1,3)
+    if tag=="X2," then
+        -- Host cancelled a clip that got stuck behind a native choice.
+        if n.role~="client" then return false end
+        local a=onlinecoop_net_numbers(sub(payload,4),1,10000000)
+        if not a then return false end
+        if (n.clip_received or 0)<a[1] then n.clip_received=a[1] end
+        if n.clip_client then n.clip_client=nil; onlinecoop_events_clear(n) end
+        _log("[CLIP GIVEUP] client dropped id="..a[1].." (host cancelled)")
+        return true
+    end
     if tag=="U2," then
         local a=onlinecoop_net_numbers(sub(payload,4),1,10000000)
         local c=n.clip_host
@@ -345,7 +388,9 @@ function onlinecoop_playback_defer(payload)
     return true
 end
 function onlinecoop_playback_client_tick()
-    local n=mode.net; local c=n.clip_client
+    local n=mode.net
+    choice_clip_watchdog()
+    local c=n.clip_client
     if n.role~="client" or n.cg_active or not c then return end
     local next_frame=c.frames[(c.index or 0)+1]
     if not c.complete and next_frame and sub(next_frame.data or "",1,4)=="0000" then
