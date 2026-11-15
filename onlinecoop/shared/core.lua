@@ -4089,6 +4089,7 @@ function initialize()
                 -- attacks when the King entered a threatened old square.
                 mode.coop_manual_king_enemy_turn_pending = {
                     turn = mode.turns,
+                    frames = 0,
                 }
                 -- opp_turn owns the completion callback, including white
                 -- movement animations not represented in the events table.
@@ -4104,6 +4105,26 @@ function initialize()
         if manual_enemy_turn then
             if mode.turns ~= manual_enemy_turn.turn or coop_floor_is_ending() then
                 mode.coop_manual_king_enemy_turn_pending = nil
+            else
+                -- opp_turn() can return without advancing the turn when the King
+                -- ends its extra action on the square of the Knight it just
+                -- killed, so the turn stamp never changes and this handshake
+                -- waits forever. Re-issue the enemy turn instead of skipping it.
+                manual_enemy_turn.frames = (manual_enemy_turn.frames or 0) + 1
+                if manual_enemy_turn.frames >= 45
+                    and not coop_white_move_animation_pending()
+                    and not mode.coop_native_turn_in_progress
+                    and not mode.coop_pause_menu_open
+                    and (not hero or not hero.in_move)
+                    and (type(events) ~= "table" or #events == 0) then
+                    mode.coop_manual_king_enemy_turn_pending = nil
+                    if _log then
+                        _log("[COOP UNSTICK] enemy turn did not advance; re-issuing"
+                            .." floor=" .. coop_string(mode.lvl)
+                            .. " turn=" .. coop_string(mode.turns))
+                    end
+                    if type(new_turn) == "function" then new_turn() end
+                end
             end
         end
         -- Refresh the native cursor once after switching control.
