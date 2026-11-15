@@ -5833,10 +5833,15 @@ local function coop_dev_run_parse()
     if not cfg.floor and #cfg.cards == 0 then return nil end
     return cfg
 end
-append("start", function()
-    if not mode or mode.id ~= "coop" then return end
+-- Applied from _update: the sandbox forbids assigning to existing globals such as
+-- `start`, so a start hook aborts the run. Wait for the first live board, then jump
+-- and grant once per run.
+append("_update", function()
+    if mode.dev_run_applied or not mode or mode.id ~= "coop" then return end
+    if not (hero and hero.sq) then return end
     local cfg = coop_dev_run_parse()
-    if not cfg then return end
+    if not cfg then mode.dev_run_applied = true return end
+    mode.dev_run_applied = true
     local target = max(1, min(11, cfg.floor or mode.lvl))
     if target > mode.lvl and type(next_floor) == "function" then
         mode.lvl = target - 1
