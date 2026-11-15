@@ -466,10 +466,15 @@ append("_draw",function()
     lprint(title,MCW/2,L.title_y,4,1)
     -- Nearby sits in the middle and the two actions shrink outward from it, so the
     -- row reads as create | browse | join instead of a wide pair plus a tag-on.
-    button(label("创建房间","Create room"),L.create[1],L.create[2],L.create[3],L.create[4])
+    -- The create button relabels itself once a room is live: the same click then
+    -- only re-copies the invite, so say so instead of pretending to create again.
+    local room_live=ui.invite and ui.invite~="-" and ui.state=="waiting"
+    button(room_live and label("复制连接码","Copy invite") or label("创建房间","Create room"),
+        L.create[1],L.create[2],L.create[3],L.create[4])
     button(label("附近房间","Nearby"),L.nearby[1],L.nearby[2],L.nearby[3],L.nearby[4])
     button(label("加入","Join"),L.join[1],L.join[2],L.join[3],L.join[4])
-    lprint(label("创建后自动复制连接码","Invite is copied for you"),
+    lprint(room_live and label("再次点击可重新复制","Click again to copy it again")
+        or label("创建后自动复制连接码","Invite is copied for you"),
         L.create[1]+L.create[3]/2,L.hint_y,3,1)
     if ui.steam then
         -- Developer transport: address and tunnel settings do not apply.
