@@ -4990,26 +4990,39 @@ function start()
     next_floor()
 end
 
--- Local demo helper: "floor=CardId" lines in lan/dev-demo-cards.txt force that
--- floor's level-up offers. Plain reads only, so it works in the mod sandbox; a
--- network guest never applies it because the host owns the offers.
-local function coop_demo_card(floor)
-    if mode.net and mode.net.role == "client" then return nil end
+-- Local demo aid: "CardId=Weight" lines in lan/dev-demo-cards.txt replace the
+-- pick weight (pwe) of those cards in the current pool. The native pick() builds
+-- its lottery from pwe (+4 per character of need_card), so raising it makes a
+-- card far more likely without pinning the offer. A network guest skips this
+-- because the host owns the level-up offers.
+local function coop_demo_trim(s)
+    while #s > 0 and (sub(s, 1, 1) == " " or sub(s, 1, 1) == "\t") do s = sub(s, 2) end
+    while #s > 0 and (sub(s, #s, #s) == " " or sub(s, #s, #s) == "\t") do s = sub(s, 1, #s - 1) end
+    return s
+end
+local function coop_demo_apply_weights()
+    if mode.net and mode.net.role == "client" then return end
+    if type(cards) ~= "table" or type(cards.pool) ~= "table" then return end
     local raw = file("lan/dev-demo-cards.txt")
-    if not raw then return nil end
-    local want = tostr(floor)
+    if not raw then return end
     local start = 1
     while start <= #raw do
         local stop = start
         while stop <= #raw and sub(raw, stop, stop) ~= "\n" do stop = stop + 1 end
-        local f, id = match(sub(raw, start, stop - 1), "^(%d+)%s*=%s*([%w][%w ]*)")
-        if f == want and id then
-            while #id > 0 and sub(id, #id, #id) == " " do id = sub(id, 1, #id - 1) end
-            if #id > 0 then return id end
+        local id, weight = match(sub(raw, start, stop - 1), "^([^=]+)%s*=%s*(%d+)%s*$")
+        local value = weight and tonum(weight)
+        if id and value and value > 0 then
+            id = coop_demo_trim(id)
+            for i = 1, #cards.pool do
+                local ca = cards.pool[i]
+                if ca and ca.id == id and ca.pwe ~= value then
+                    ca.pwe = value
+                    if _log then _log("[COOP DEMO] weight " .. id .. "=" .. value) end
+                end
+            end
         end
         start = stop + 1
     end
-    return nil
 end
 
 function next_floor()
@@ -5067,20 +5080,9 @@ function grow()
                 data.choices[i][2].id = "Homecoming"
             end
         end
-        -- Demo aid for local recordings: lan/dev-demo-cards.txt may map a floor
-        -- to a card id ("2=Revolution", "3=Guillotine"). The file is local and the
-        -- host applies it, so the guest needs nothing: the host owns the level-up
-        -- offers and the guest only echoes the chosen button index. Delete the
-        -- file and the original pool draw comes back unchanged.
-        do
-            local demo = coop_demo_card(mode.lvl)
-            if demo then
-                for i = 1, 2 do
-                    for j = 1, 2 do data.choices[i][j].id = demo end
-                end
-                if _log then _log("[COOP DEMO] forced card " .. demo .. " on floor " .. tostr(mode.lvl)) end
-            end
-        end
+        -- Demo aid for local recordings: raise specific card weights instead of
+        -- pinning the offer, so the choice screen still varies.
+        coop_demo_apply_weights()
         -- Keep native team constraints: explicit IDs bypass pool removal and
         -- make Search draw the same card again. Only Homecoming above is a
         -- scripted native offer (its own reroll becomes Tragic Homecoming).
