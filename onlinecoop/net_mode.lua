@@ -424,7 +424,7 @@ function onlinecoop_net_tick()
             if onlinecoop_playback_defer(payload) then
                 -- The next scene must not cut off a buffered action.
             elseif sub(payload,1,3)=="T2," or sub(payload,1,3)=="F2," or sub(payload,1,3)=="J2," then onlinecoop_playback_receive(payload)
-            elseif sub(payload,1,3)=="X2," then onlinecoop_playback_receive(payload)
+            elseif sub(payload,1,3)=="X2," or sub(payload,1,3)=="X1," then onlinecoop_playback_receive(payload)
             elseif sub(payload,1,3)=="W1," then onlinecoop_campaign_receive(payload)
             elseif sub(payload,1,3)=="Z1," or sub(payload,1,3)=="Z2," then onlinecoop_results_receive(payload)
             elseif sub(payload,1,3)=="G3," then onlinecoop_receive_cg(payload)

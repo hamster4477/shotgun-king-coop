@@ -68,6 +68,32 @@ function onlinecoop_playback_waiting_choice()
         or (type(onlinecoop_choices_live)=="function" and onlinecoop_choices_live())
 end
 
+-- Manual escape hatch: F5 drops an in-flight clip immediately on either side.
+-- The host owns the clips, so it cancels and tells the guest; a guest that gives
+-- up asks the host to stop waiting with X1.
+defbtn("online_abort_clip",0,"k:f5")
+local function abort_clip(reason)
+    local n=mode.net
+    if not n or not n.peer_ok then return false end
+    if n.role=="host" and n.clip_host then
+        local id=n.clip_host.id
+        send("X2,"..id)
+        n.clip_host=nil; n.board_last_pixels=nil; n.board_capture_at=nil
+        _log("[CLIP ABORT] host dropped id="..id.." ("..reason..")")
+        return true
+    end
+    if n.role=="client" and n.clip_client then
+        local id=n.clip_client.id
+        send("X1,"..id)
+        if (n.clip_received or 0)<id then n.clip_received=id end
+        n.clip_client=nil
+        onlinecoop_events_clear(n)
+        _log("[CLIP ABORT] client dropped id="..id.." ("..reason..")")
+        return true
+    end
+    return false
+end
+
 -- A native choice waits for input, so a clip that was streaming when it opened can
 -- never be acknowledged: the host would wait for the guest forever and the guest
 -- would wait for frames that never arrive. Give the choice priority after a grace
@@ -85,19 +111,7 @@ local function choice_clip_watchdog()
     if not n.choice_clip_since then n.choice_clip_since=now; return end
     if now-n.choice_clip_since<CHOICE_CLIP_GIVEUP then return end
     n.choice_clip_since=nil
-    if n.clip_host then
-        local id=n.clip_host.id
-        send("X2,"..id)
-        n.clip_host=nil; n.board_last_pixels=nil; n.board_capture_at=nil
-        _log("[CLIP GIVEUP] host abandoned id="..id.." after "..CHOICE_CLIP_GIVEUP.."s in a native choice")
-    end
-    if n.clip_client then
-        local id=n.clip_client.id
-        if (n.clip_received or 0)<id then n.clip_received=id end
-        n.clip_client=nil
-        onlinecoop_events_clear(n)
-        _log("[CLIP GIVEUP] client abandoned id="..id.." after "..CHOICE_CLIP_GIVEUP.."s in a native choice")
-    end
+    abort_clip("choice timeout")
 end
 local function animation_state()
     local n=mode.net
@@ -256,6 +270,7 @@ end
 function onlinecoop_playback_host_tick()
     local n=mode.net
     if n.role~="host" or not n.peer_ok then return end
+    if btnp("online_abort_clip",0) then abort_clip("manual") end
     choice_clip_watchdog()
     local active,moving=animation_state()
     local c=n.clip_host
@@ -309,6 +324,15 @@ end
 
 function onlinecoop_playback_receive(payload)
     local n=mode.net; local tag=sub(payload,1,3)
+    if tag=="X1," then
+        -- The guest gave up on a clip; stop waiting for its acknowledgement.
+        if n.role~="host" then return false end
+        local a=onlinecoop_net_numbers(sub(payload,4),1,10000000)
+        if not a or not n.clip_host or n.clip_host.id~=a[1] then return false end
+        n.clip_host=nil; n.board_last_pixels=nil; n.board_capture_at=nil
+        _log("[CLIP ABORT] host dropped id="..a[1].." (guest gave up)")
+        return true
+    end
     if tag=="X2," then
         -- Host cancelled a clip that got stuck behind a native choice.
         if n.role~="client" then return false end
@@ -389,6 +413,7 @@ function onlinecoop_playback_defer(payload)
 end
 function onlinecoop_playback_client_tick()
     local n=mode.net
+    if n.role=="client" and n.peer_ok and btnp("online_abort_clip",0) then abort_clip("manual") end
     choice_clip_watchdog()
     local c=n.clip_client
     if n.role~="client" or n.cg_active or not c then return end

@@ -1,5 +1,5 @@
-"""The choice watchdog must free a clip that a native choice stranded, and must
-never cut a boss cinematic short."""
+"""The choice watchdog must free a clip that a native choice stranded, never cut a
+boss cinematic short, and let F5 drop a clip on demand."""
 import io
 import pathlib
 
@@ -22,22 +22,43 @@ local function send(s) sent[#sent+1] = s; return true end
 local function onlinecoop_events_clear() end
 local function onlinecoop_net_numbers() return nil end
 local function onlinecoop_choices_live() return nil end
+local function defbtn() end
 disrupt_menu = nil
 ''' + block + r'''
-function run_case(steps)
+function reset()
     clock = 0; sent = {}
     mode = { net = {} }
+    mode.net.peer_ok = true
+end
+
+function run_case(steps)
+    reset()
     local n = mode.net
-    n.peer_ok = true
     for _, st in ipairs(steps) do
         clock = clock + (st.dt or 0)
         disrupt_menu = st.choice and true or nil
+        n.role = st.host and 'host' or (st.client and 'client' or nil)
         n.clip_host = st.host and { id = st.host } or nil
         n.clip_client = st.client and { id = st.client } or nil
         if st.recv then n.clip_received = st.recv end
         choice_clip_watchdog()
     end
     return (n.clip_host and "host" or "-") .. "," ..
+           (n.clip_client and "client" or "-") .. "," ..
+           tostring(n.clip_received or 0) .. "," ..
+           table.concat(sent, "|")
+end
+
+function run_abort(role, host, client, recv)
+    reset()
+    local n = mode.net
+    n.role = role
+    n.clip_host = host and { id = host } or nil
+    n.clip_client = client and { id = client } or nil
+    n.clip_received = recv or 0
+    local hit = abort_clip("manual")
+    return tostring(hit) .. "," ..
+           (n.clip_host and "host" or "-") .. "," ..
            (n.clip_client and "client" or "-") .. "," ..
            tostring(n.clip_received or 0) .. "," ..
            table.concat(sent, "|")
@@ -58,7 +79,7 @@ CASES = [
      '{ {dt=0,host=5,choice=true}, {dt=7,host=5,choice=true}, {dt=1,host=5},'
      ' {dt=7,host=5,choice=true}, {dt=1,host=5,choice=true} }', 'host,-,0,'),
     ('client keeps the clip serial in step',
-     '{ {dt=0,client=9,recv=9,choice=true}, {dt=8.1,client=9,recv=9,choice=true} }', '-,-,9,'),
+     '{ {dt=0,client=9,recv=9,choice=true}, {dt=8.1,client=9,recv=9,choice=true} }', '-,-,9,X1,9'),
     ('a boss cinematic is never cut',
      '{ {dt=0,host=3,client=3}, {dt=30,host=3,client=3}, {dt=60,host=3,client=3} }',
      'host,client,0,'),
@@ -70,4 +91,19 @@ for name, steps, expected in CASES:
     if got != expected:
         raise SystemExit(f'{name}: got {got!r}, expected {expected!r}')
     print(f'ok  {name:36} -> {got}')
-print('PASS: choice clip watchdog')
+
+ABORTS = [
+    ('host abort cancels for the guest', "'host'", '7', 'nil', '0',
+     'true,-,-,0,X2,7'),
+    ('client abort asks the host to stop', "'client'", 'nil', '7', '7',
+     'true,-,-,7,X1,7'),
+    ('abort without a clip is a no-op', "'host'", 'nil', 'nil', '0', 'false,-,-,0,'),
+]
+for name, role, host, client, recv, expected in ABORTS:
+    lua.execute(f'result = run_abort({role}, {host}, {client}, {recv})')
+    got = str(lua.globals().result)
+    if got != expected:
+        raise SystemExit(f'{name}: got {got!r}, expected {expected!r}')
+    print(f'ok  {name:36} -> {got}')
+
+print('PASS: choice clip watchdog and F5 abort')
