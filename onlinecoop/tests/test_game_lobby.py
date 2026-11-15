@@ -96,7 +96,7 @@ assert(clears==before and #texts==0)
 assert(MODLIST[2].lan_lobby.enter())
 -- A same-frame draw is valid even before the first mouse update.
 draw(); assert(#texts>0 and #lines==0)
-click(40,88); draw(); assert(#lines==1 and lines[1][1]==31)
+click(40,100); draw(); assert(#lines==1 and lines[1][1]==31)
 now=3.7; draw(); assert(#lines==0)
 typed="123"; hooks.online_lobby_input(); draw()
 assert(#lines==1 and lines[1][1]==43)
@@ -155,30 +155,30 @@ assert(files["lan/public-endpoint.txt"]=="test-tunnel.example:45678")
 now=31
 files[base_test.."status.txt"]="LB1|waiting|127.0.0.1|127.0.0.1:7841:"..string.rep("b",32).."|none|3|31|END"
 hooks.online_lobby_input(); draw(); assert(string.find(table.concat(texts,"\n"),"Room created",1,true))
-click(50,115)
+click(72,35)
 assert(copied=="SKCOOP1|test-tunnel.example:45678|"..string.rep("b",32))
 local invite=copied
-click(240,115); now=32; status("ready",4,32); hooks.online_lobby_input()
-clipboard(invite); click(240,88); draw()
+now=32; status("ready",4,32); hooks.online_lobby_input()
+clipboard(invite); click(260,100); draw()
 assert(not files[base_test.."request-5.txt"],"Paste must not connect")
 clipboard("changed clipboard must not replace input")
 click(240,40)
-assert(string.find(files[base_test.."request-5.txt"],"|client|test-tunnel.example|45678|",1,true))
+assert(string.find(files[base_test.."request-6.txt"],"|client|test-tunnel.example|45678|",1,true))
 -- Domain-bearing status does not break heartbeat parsing.
 now=33
-files[base_test.."status.txt"]="LB1|starting|127.0.0.1|test-tunnel.example:45678:"..string.rep("b",32).."|none|5|33|END"
+files[base_test.."status.txt"]="LB1|starting|127.0.0.1|test-tunnel.example:45678:"..string.rep("b",32).."|none|7|33|END"
 hooks.online_lobby_input()
-now=33.5; status("waiting",5,34); hooks.online_lobby_input()
+now=33.5; status("waiting",7,34); hooks.online_lobby_input()
 for _,v in ipairs({{"english","Connecting to host..."},{"simplified_chinese","正在连接房主……"}}) do
  current_lang=v[1]; draw(); assert(string.find(table.concat(texts,"\n"),v[2],1,true))
 end
 click(210,157); draw(); assert(not string.find(table.concat(texts,"\n"),"房间已创建",1,true))
 click(150,158); current_lang="english"
-click(240,115)
+
 now=34; status("ready",6,34); hooks.online_lobby_input()
 for _,bad in ipairs({"http://bad.example:45678","a..b:1234","-bad.example:1234","a.example:0","a.example:65536","999.1.1.1:1234"}) do
  copied="SKCOOP1|"..bad.."|"..string.rep("b",32)
- click(240,88); click(240,40); assert(not files[base_test.."request-7.txt"])
+ click(260,100); click(240,40); assert(not files[base_test.."request-7.txt"])
 end
 ''')
 print('PASS: tunnel toggle, public address paste/copy, fixed binding request, paste without connecting, Join uses input, domain join/status and invalid addresses')
@@ -203,7 +203,7 @@ local invite="SKCOOP1|192.168.1.9:27841|"..string.rep("c",32)
 files[base_test.."rooms.txt"]="192.168.1.9:27841:"..string.rep("c",32).."|Test-PC"
 files[base_test.."adapters.txt"]="127.0.0.1|Loopback"
 now=51;status("ready",8,51);hooks.online_lobby_input()
-click(240,12);draw()
+click(160,35);draw()
 assert(files[base_test.."discover.txt"]=="ON")
 assert(string.find(table.concat(texts,"\n"),"Test-PC",1,true))
 click(60,36)
@@ -213,10 +213,10 @@ now=52
 files[base_test.."status.txt"]="LB1|error|127.0.0.1|-|refused|9|52|END"
 hooks.online_lobby_input();draw()
 assert(string.find(table.concat(texts,"\n"),"Refused",1,true))
-click(240,115)
+click(160,134)
 assert(string.find(files[base_test.."request-10.txt"],"|client|192.168.1.9|27841|",1,true))
 now=53;status("error",10,53);hooks.online_lobby_input()
-clipboard("1234567890");click(240,88)
+clipboard("1234567890");click(260,100)
 keys={lobby_back=true};held.lobby_back={start=now,next=now+.4};hooks.online_lobby_input()
 draw(); assert(string.find(table.concat(texts,"\n"),"123456789",1,true))
 now=53.2;hooks.online_lobby_input();draw()
@@ -233,7 +233,7 @@ keys={lobby_delete=true};held.lobby_delete={start=now,next=now+.4};hooks.online_
 now=54.82;hooks.online_lobby_input();held={};blocked={}
 draw();found=false;for _,t in ipairs(texts) do if t=="12345" then found=true end end
 assert(found,"Held Left/Delete must edit at the caret")
-click(240,12);keys={lobby_escape=true};hooks.online_lobby_input()
+click(160,35);keys={lobby_escape=true};hooks.online_lobby_input()
 assert(files[base_test.."discover.txt"]=="OFF")
 ''')
 print('PASS: nearby selection, discovery stop, classified failure/retry and held editing keys')
@@ -249,7 +249,7 @@ local function refresh_rooms(count)
  files[base_test.."adapters.txt"]="192.168.2.1|Ethernet\n192.168.2.2|Wi-Fi\n127.0.0.1|Loopback"
  now=now+1;status("ready",10,math.floor(now));hooks.online_lobby_input()
 end
-refresh_rooms(5);click(240,12);draw()
+refresh_rooms(5);click(160,35);draw()
 assert(string.find(table.concat(texts,"\n"),"1/1",1,true))
 click(250,145);draw();assert(string.find(table.concat(texts,"\n"),"1/1",1,true))
 refresh_rooms(6);draw();assert(string.find(table.concat(texts,"\n"),"1/2",1,true))
@@ -293,12 +293,12 @@ click(200,155);draw()
 assert(not string.find(table.concat(texts,"\n"),"Use public endpoint",1,true),"tunnel settings are not part of this transport")
 now=62;files[base_test.."status.txt"]="LB1|waiting|127.0.0.1|steam:109775244637163549:"..string.rep("d",32).."|none|21|62|END"
 hooks.online_lobby_input();draw()
-click(40,115)
+click(72,35)
 assert(copied=="SKCOOPS1|109775244637163549|"..string.rep("d",32),"Steam invite must copy as lobby metadata")
 now=64;files[base_test.."status.txt"]="LB1|ready|127.0.0.1|-|none|21|64|END";hooks.online_lobby_input()
 -- The guest pastes the copied invite, exactly as a player would.
-click(250,88)
-click(200,40)
+click(260,100)
+click(240,40)
 local join=last_request()
 assert(join and string.find(join,"|steamclient|109775244637163549|",1,true),"guest must ask to join the Steam lobby")
 -- The gesture toggles back to the LAN transport.

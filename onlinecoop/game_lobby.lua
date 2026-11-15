@@ -76,7 +76,10 @@ local function join_room(text)
             ui.message=label("Steam 连接码无效，请向房主重新获取","Invalid Steam invite: ask the host for a new code")
             return
         end
-        ui.text=text; ui.steam=true; ui.hosting=false
+        -- The broker rejects a new request while a bridge runs, so release ours
+        -- first; it consumes the two requests in order.
+        if ui.owned and base then request("cancel","127.0.0.1",27841,"-") end
+        ui.text=text; ui.steam=true; ui.hosting=false; ui.copy_pending=nil
         request("steamclient",sid,tonum(ui.port) or 27841,skey)
         return
     end
@@ -84,7 +87,9 @@ local function join_room(text)
     if not ip or not port or not key or #key~=32 or #text>310 or not public_endpoint(ip..":"..port) then
         ui.message=label("连接码无效，请复制完整连接码","Invalid invite: copy the complete code"); return
     end
-    ui.text=text; ui.steam=false; ui.hosting=false; request("client",ip,port,key)
+    if ui.owned and base then request("cancel","127.0.0.1",27841,"-") end
+    ui.text=text; ui.steam=false; ui.hosting=false; ui.copy_pending=nil
+    request("client",ip,port,key)
 end
 local function inside(x,y,w,h)
     return ui.mx>=x and ui.mx<x+w and ui.my>=y and ui.my<y+h
@@ -155,9 +160,6 @@ local function enter(entry)
     -- Keep the existing preconnected command-line/local-test entry usable.
     if not live() and onlinecoop_lan and onlinecoop_lan.status=="connected" then return false end
     ui.open=true; ui.settings=false; ui.focus=nil; ui.message=""; setup(); catchtxt(); clear_lobby_input()
-    -- One-time reminder when the lobby opens without a helper: the LAN modes are
-    -- always listed, but hosting and joining need the Online Co-op launcher.
-    ui.notice_until = (ui.alive and time()<ui.alive) and nil or (time()+6)
     _log("[ONLINE LOBBY] opened from mode menu; helper="
         ..(live() and "yes" or "no"))
     return true
@@ -206,6 +208,63 @@ local function edit_input(text)
     elseif btnp("lobby_end",0) then cursor=#value; ui.blink=time() end
     ui[field]=value; ui.cursor=cursor
 end
+-- One layout shared by input and drawing, so the hit tests cannot drift from what
+-- the player actually sees. Everything is relative to the 264-wide content column.
+local function layout()
+    local left=MCW/2-132
+    return {
+        left=left,
+        title_y=6,
+        create={left,24,88,23},
+        nearby={left+96,24,72,23},
+        join={left+176,24,88,23},
+        hint_y=52,
+        local_y=66, adapter_y=76,
+        address_strip={left,58,194,18},
+        port_label_x=left+199, port_label_y=62,
+        port={left+226,58,38,5},
+        port_hit={left+222,54,44,24},
+        invite={left,92,194,16},
+        paste={left+200,92,64,16},
+        message_y=112,
+        retry={left+88,126,88,16},
+        back={left,146,88,18},
+        tunnel={left+100,146,164,18},
+        help_y=168,
+        room_y=28, room_h=19, room_pitch=21,
+        page_prev={left,137,80,17},
+        page_next={left+184,137,80,17},
+        nearby_back={left,158,88,18}
+    }
+end
+local function hit(box) return inside(box[1],box[2],box[3],box[4]) end
+local function retryable() return ui.last_request end
+-- Copy whatever invite the broker published: a Steam lobby id or a TCP endpoint.
+-- Used by the create button and by the automatic copy that follows room creation.
+local function copy_invite()
+    local invite=ui.invite
+    if not invite or invite=="-" then return false end
+    local sid,skey=match(invite,"^steam:(%d+):([a-f0-9]+)$")
+    if sid and skey then
+        clipboard("SKCOOPS1|"..sid.."|"..skey)
+        ui.message=label("房间已创建，Steam 连接码已复制","Room created: Steam invite copied")
+        return true
+    end
+    local ip,port,key=match(invite,"^([A-Za-z0-9.%-]+):(%d+):([a-f0-9]+)$")
+    if not ip then return false end
+    if ui.hosting and ui.mapped then
+        local host,public_port=public_endpoint(ui.external)
+        if not host then
+            ui.message=label("请填写有效的对外地址:端口","Enter a valid public hostname:port")
+            return false
+        end
+        file("lan/public-endpoint.txt",ui.external)
+        ip,port=host,public_port
+    end
+    clipboard("SKCOOP1|"..ip..":"..port.."|"..key)
+    ui.message=label("房间已创建，连接码已复制","Room created: invite copied")
+    return true
+end
 prepend("_update",function()
     if not ui.setup then setup(); ui.setup=true end
     local now=time()
@@ -228,6 +287,12 @@ prepend("_update",function()
                 end
             end
             ui.room_page=min(ui.room_page,max(0,room_pages(#ui.rooms)-1))
+            -- Creating a room also copies its invite; finish that here once the
+            -- broker has published one, then never copy again on its own.
+            if ui.copy_pending and ui.state=="waiting" and invite and invite~="-" then
+                ui.copy_pending=nil
+                copy_invite()
+            end
         end
     end
     if not ui.open then return end
@@ -242,16 +307,16 @@ prepend("_update",function()
     local ready=ui.state=="ready" or ui.state=="error" or ui.state=="stopped"
     if ui.nearby then
         catchtxt()
-        local left=MCW/2-132
+        local L=layout()
         if btnp("lobby_escape",0) then browsing(false)
         elseif btnp("lobby_click",0) then
-            if inside(left,158,88,18) then browsing(false)
-            elseif inside(left,137,80,17) then ui.room_page=max(0,ui.room_page-1)
-            elseif inside(left+184,137,80,17) then ui.room_page=min(max(0,room_pages(#ui.rooms)-1),ui.room_page+1)
+            if hit(L.nearby_back) then browsing(false)
+            elseif hit(L.page_prev) then ui.room_page=max(0,ui.room_page-1)
+            elseif hit(L.page_next) then ui.room_page=min(max(0,room_pages(#ui.rooms)-1),ui.room_page+1)
             elseif available and ready then
                 for row=1,5 do
                     local room=ui.visible_rooms[row]
-                    if room and inside(left,28+(row-1)*21,264,19) then join_room(room.invite); break end
+                    if room and inside(L.left,L.room_y+(row-1)*L.room_pitch,264,L.room_h) then join_room(room.invite); break end
                 end
             end
         end
@@ -298,48 +363,42 @@ prepend("_update",function()
     if btnp("lobby_escape",0) then
         leave(); return
     elseif btnp("lobby_click",0) then
-        local left=MCW/2-132
-        if inside(left+198,6,66,18) and ready then browsing(true); ui.room_page=0
-        elseif inside(left,148,88,18) then leave(); return
-        elseif inside(left+100,148,164,18) and not ui.steam then ui.settings=true; ui.focus=nil; ui.message=""
-        elseif inside(left,31,124,23) and available and ready then
-            local port=tonum(ui.port)
-            if ui.mapped and not public_endpoint(ui.external) then
-                ui.message=label("请填写对外域名或 IP:端口","Enter public hostname or IP:port")
-            elseif port and port>=1024 and port<=65535 then
-                if ui.mapped then file("lan/public-endpoint.txt",ui.external) end
-                ui.hosting=true
-                request(ui.steam and "steamhost" or (ui.mapped and "hostmapped" or "host"),ui.steam and "127.0.0.1" or (ui.addresses[ui.address] or "127.0.0.1"),port,"-")
-            else ui.message=label("端口需为 1024～65535","Port must be 1024-65535") end
-        elseif inside(left+140,31,124,23) and available and ready then join_room(ui.text)
-        elseif inside(left,61,192,16) and ready and not ui.steam then ui.address=ui.address%max(1,#ui.addresses)+1; ui.focus=nil
-        elseif inside(left+199,61,65,16) and ready then focus("port")
-        elseif inside(left,82,194,16) and ready then focus("text")
-        elseif inside(left+200,82,64,16) and ready then
+        local L=layout()
+        if hit(L.nearby) and ready then browsing(true); ui.room_page=0
+        elseif hit(L.back) then leave(); return
+        elseif hit(L.tunnel) and not ui.steam then ui.settings=true; ui.focus=nil; ui.message=""
+        elseif hit(L.create) and available and ready then
+            -- One button for both steps: a live room only re-copies its invite,
+            -- otherwise create the room and copy once the broker publishes it.
+            if ui.invite and ui.invite~="-" and ui.state=="waiting" then
+                copy_invite()
+            else
+                local port=tonum(ui.port)
+                if ui.mapped and not public_endpoint(ui.external) then
+                    ui.message=label("请填写对外域名或 IP:端口","Enter public hostname or IP:port")
+                elseif port and port>=1024 and port<=65535 then
+                    if ui.mapped then file("lan/public-endpoint.txt",ui.external) end
+                    ui.hosting=true; ui.copy_pending=true
+                    request(ui.steam and "steamhost" or (ui.mapped and "hostmapped" or "host"),
+                        ui.steam and "127.0.0.1" or (ui.addresses[ui.address] or "127.0.0.1"),port,"-")
+                else ui.message=label("端口需为 1024～65535","Port must be 1024-65535") end
+            end
+        elseif hit(L.join) and available and ready then
+            if ui.text=="" then
+                ui.message=label("先粘贴朋友的连接码，再点加入","Paste your friend's invite, then Join")
+            else join_room(ui.text) end
+        elseif hit(L.retry) and available and retryable()
+            and (ui.state=="error" or ui.state=="stopped") then
+            local r=ui.last_request
+            ui.hosting=r[1]~="client" and r[1]~="steamclient"
+            request(r[1],r[2],r[3],r[4])
+        elseif hit(L.address_strip) and ready and not ui.steam then ui.address=ui.address%max(1,#ui.addresses)+1; ui.focus=nil
+        elseif hit(L.port_hit) and ready then focus("port")
+        elseif hit(L.invite) and ready then focus("text")
+        elseif hit(L.paste) and ready then
             local pasted=match(clipboard() or "","^%s*(.-)%s*$") or ""
             if #pasted<=310 then ui.text=pasted; ui.message=""; focus("text")
             else ui.message=label("连接码过长，请复制完整有效的连接码","Invite too long: copy a valid complete code") end
-        elseif inside(left,108,124,20) and ui.invite and ui.invite~="-" then
-            -- Steam invites carry a lobby id instead of an address.
-            local sid,skey=match(ui.invite,"^steam:(%d+):([a-f0-9]+)$")
-            if sid and skey then
-                clipboard("SKCOOPS1|"..sid.."|"..skey)
-                ui.message=label("Steam 连接码已复制，发给好友","Steam invite copied: send it to your friend")
-                consume_input(); return
-            end
-            local ip,port,key=match(ui.invite,"^([A-Za-z0-9.%-]+):(%d+):([a-f0-9]+)$")
-            if ui.hosting and ui.mapped then
-                ip,port=public_endpoint(ui.external)
-                if ip then file("lan/public-endpoint.txt",ui.external)
-                else ui.message=label("请填写有效的对外地址:端口","Enter a valid public hostname:port") end
-            end
-            if ip then clipboard("SKCOOP1|"..ip..":"..port.."|"..key); ui.message=label("连接码已复制，发给朋友即可","Invite copied: send it to your friend") end
-        elseif inside(left+140,108,124,20) and available then
-            if ready and ui.last_request then
-                local r=ui.last_request
-                ui.hosting=r[1]~="client" and r[1]~="steamclient"
-                request(r[1],r[2],r[3],r[4])
-            else request("cancel","127.0.0.1",27841,"-") end
         else ui.focus=nil end
     end
     consume_input()
@@ -366,32 +425,24 @@ append("_draw",function()
     local overlay=winspec("overlay")
     if overlay=="hdtext" and srfname(overlay) then local previous=srfname(); target(overlay); cls(255); target(previous) end
     clip(); pal(); rectfill(0,0,MCW,240,1)
-    -- Temporary banner: the LAN modes are always listed, so say plainly that
-    -- networking needs the Online Co-op launcher when no helper answers.
-    if ui.notice_until and time()<ui.notice_until and not live() then
-        local text=label("未检测到联机助手：请用联机启动器启动",
-                         "No co-op helper: use the Co-op launcher")
-        rectfill(0,52,MCW,72,1)
-        rectfill(0,52,MCW,54,5)
-        lprint(text,8,58,4,1)
-    end
-    local left=MCW/2-132
+    local L=layout()
+    local left=L.left
     if ui.nearby then
-        lprint(label("附近房间","Nearby rooms"),MCW/2,6,4,1)
+        lprint(label("附近房间","Nearby rooms"),MCW/2,L.title_y,4,1)
         ui.visible_rooms={}
         for row=1,5 do
             local room=ui.rooms[ui.room_page*5+row]
             ui.visible_rooms[row]=room
-            if room then button(room.name.."  "..room.address,left,28+(row-1)*21,264,19) end
+            if room then button(room.name.."  "..room.address,left,L.room_y+(row-1)*L.room_pitch,264,L.room_h) end
         end
         if #ui.rooms==0 then
             lprint(label("正在寻找房间，请朋友先创建","Searching: ask your friend to create a room"),MCW/2,55,3,1)
             lprint(label("找不到时可返回，用连接码加入","If none appear, go back and use an invite"),MCW/2,72,3,1)
         end
-        button(label("上一页","Previous"),left,137,80,17)
+        button(label("上一页","Previous"),L.page_prev[1],L.page_prev[2],L.page_prev[3],L.page_prev[4])
         lprint((ui.room_page+1).."/"..max(1,room_pages(#ui.rooms)),MCW/2,142,3,1)
-        button(label("下一页","Next"),left+184,137,80,17)
-        button(label("返回","Back"),left,158,88,18)
+        button(label("下一页","Next"),L.page_next[1],L.page_next[2],L.page_next[3],L.page_next[4])
+        button(label("返回","Back"),L.nearby_back[1],L.nearby_back[2],L.nearby_back[3],L.nearby_back[4])
         lprint(label("双方需选同一模式","Use the same game mode"),left+94,164,3)
         return
     end
@@ -404,7 +455,7 @@ append("_draw",function()
         button(label("粘贴","Paste"),left+200,92,64,17)
         lprint(label("开启后填写对外地址，返回大厅创建房间并复制连接码","Enable, enter public address; return to create / copy invite"),MCW/2,118,3,1)
         if ui.state=="waiting" and ui.hosting then
-            lprint(label("房间已创建；开关需取消连接后修改","Room active: cancel connection to change the switch"),MCW/2,131,3,1)
+            lprint(label("房间已创建；返回大厅即可重新设置","Room active: go back to the lobby to change it"),MCW/2,131,3,1)
         else lprint(ui.message,MCW/2,131,4,1) end
         button(label("返回大厅","Back to lobby"),MCW/2-44,150,88,18)
         return
@@ -412,26 +463,27 @@ append("_draw",function()
     local title=ui.entry=="onlinecoop_endless" and label("局域网无尽","LAN Endless")
         or ui.entry=="onlinecoop_charnier" and label("局域网剿灭","LAN Charnier")
         or label("局域网合作","Online Co-op")
-    lprint(title,MCW/2-35,10,4,1)
-    button(label("附近房间","Nearby"),left+198,6,66,18)
-    button(label("创建房间","Create room"),left,31,124,23)
-    button(label("加入","Join"),left+140,31,124,23)
+    lprint(title,MCW/2,L.title_y,4,1)
+    -- Nearby sits in the middle and the two actions shrink outward from it, so the
+    -- row reads as create | browse | join instead of a wide pair plus a tag-on.
+    button(label("创建房间","Create room"),L.create[1],L.create[2],L.create[3],L.create[4])
+    button(label("附近房间","Nearby"),L.nearby[1],L.nearby[2],L.nearby[3],L.nearby[4])
+    button(label("加入","Join"),L.join[1],L.join[2],L.join[3],L.join[4])
+    lprint(label("创建后自动复制连接码","Invite is copied for you"),
+        L.create[1]+L.create[3]/2,L.hint_y,3,1)
     if ui.steam then
         -- Developer transport: address and tunnel settings do not apply.
-        lprint(label("连接方式：Steam P2P（实验）","Connection: Steam P2P (experimental)"),left,64,3)
-        lprint(label("Steam 好友联机 / App ID 480","Steam friends / App ID 480"),left,74,3)
+        lprint(label("连接方式：Steam P2P（实验）","Connection: Steam P2P (experimental)"),L.left,L.local_y,3)
+        lprint(label("Steam 好友联机 / App ID 480","Steam friends / App ID 480"),L.left,L.adapter_y,3)
     else
-        lprint(label("本地：","Local: ")..(ui.addresses[ui.address] or "...").." >",left,64,3)
+        lprint(label("本地：","Local: ")..(ui.addresses[ui.address] or "...").." >",L.left,L.local_y,3)
         local address=ui.addresses[ui.address]
-        lprint(ui.adapters[address] or (address=="127.0.0.1" and label("仅本机","This PC only") or ""),left,74,3)
+        lprint(ui.adapters[address] or (address=="127.0.0.1" and label("仅本机","This PC only") or ""),L.left,L.adapter_y,3)
     end
-    lprint(label("端口","Port"),left+199,64,3)
-    field("port",left+226,60,38,5)
-    field("text",left,82,194,45,label("输入或粘贴连接码，再点击加入","Enter / paste invite, then Join"))
-    button(label("粘贴","Paste"),left+200,82,64,16)
-    button(label("复制连接码","Copy invite"),left,108,124,20)
-    local retry=(ui.state=="error" or ui.state=="stopped" or ui.state=="ready") and ui.last_request
-    button(retry and label("重试","Retry") or label("取消连接","Cancel"),left+140,108,124,20)
+    lprint(label("端口","Port"),L.port_label_x,L.port_label_y,3)
+    field("port",L.port[1],L.port[2],L.port[3],5)
+    field("text",L.invite[1],L.invite[2],L.invite[3],45,label("输入或粘贴连接码，再点击加入","Enter / paste invite, then Join"))
+    button(label("粘贴","Paste"),L.paste[1],L.paste[2],L.paste[3],L.paste[4])
     local states={ready=label("创建房间，或粘贴连接码后点击加入","Create a room, or paste an invite then Join"),starting=label("正在连接……","Connecting..."),waiting=ui.hosting and label("房间已创建，等待朋友加入","Room created: waiting for friend") or label("正在连接房主……","Connecting to host..."),connected=label("已连接，正在进入准备界面","Connected: opening setup"),error=label("连接失败，请核对地址、组网和防火墙后重试","Connection failed: check address / network / firewall"),stopped=label("已断开，可重新创建或加入","Disconnected: create or join again")}
     local message=ui.message~="" and ui.message or states[ui.state] or ui.state
     if ui.state=="error" then
@@ -453,14 +505,19 @@ append("_draw",function()
         message=errors[ui.error] or message
     end
     if not live() then message=label("助手未启动，请通过联机启动器运行","Use an Online Co-op launcher to enable networking") end
-    lprint(message,MCW/2,136,4,1)
-    button(label("返回","Back"),left,148,88,18)
+    lprint(message,MCW/2,L.message_y,4,1)
+    -- Retry only appears after a failed or dropped attempt: leaving the lobby
+    -- already releases the connection, so a permanent cancel button was noise.
+    if retryable() and (ui.state=="error" or ui.state=="stopped") then
+        button(label("重试","Retry"),L.retry[1],L.retry[2],L.retry[3],L.retry[4])
+    end
+    button(label("返回","Back"),L.back[1],L.back[2],L.back[3],L.back[4])
     button(ui.steam and label("穿透设置：不适用","Tunnel settings: n/a")
         or ui.mapped and label("穿透设置：已开启","Tunnel settings: ON")
-        or label("穿透设置（可选）","Tunnel settings (optional)"),left+100,148,164,18)
+        or label("穿透设置（可选）","Tunnel settings (optional)"),L.tunnel[1],L.tunnel[2],L.tunnel[3],L.tunnel[4])
     local help=live() and label("多网卡可点地址切换；端口默认无需修改","Click address to switch adapter; keep the default port")
         or label("启动方式与 Steam 设置见 README_zh.md","See README.md for launchers and Steam setup")
     if ui.mapped then help=label("TCP 隧道本地地址/端口应与上方一致","TCP tunnel target must match Local address / port") end
     if ui.steam then help=label("双方登录 Steam 并互加好友；保留原有连接方式","Sign in to Steam and add each other; LAN remains available") end
-    lprint(help,MCW/2,170,3,1)
+    lprint(help,MCW/2,L.help_y,3,1)
 end,"online_lobby_draw")
