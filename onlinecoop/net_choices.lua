@@ -54,7 +54,7 @@ function onlinecoop_choices_receive(payload)
     local c={id=a[1],kind=a[2],buttons={}}
     for i=2,#parts do
         local b=onlinecoop_net_numbers(parts[i],5,1024)
-        if not b or b[1]>1024 or b[2]>240 or b[3]<1 or b[3]>240 or b[4]<1 or b[4]>80 or b[5]>7 then return false end
+        if not b or b[1]>1024 or b[2]>240 or b[3]<1 or b[3]>240 or b[4]<1 or b[4]>80 or b[5]>8 then return false end
         add(c.buttons,{x=b[1]-512+MCW/2,y=b[2],w=b[3],h=b[4],label=b[5]})
     end
     n.choice_received=a[1];n.remote_choices=a[2]>0 and c or nil
@@ -91,8 +91,16 @@ function onlinecoop_choices_draw()
         lprint(zh and "黑骑士拾起了红色圣书" or "The Knight takes the Red Book",MCW/2,y+9,4,1)
     end
     local tear_available=false
+    local mx,my=btnv("online_mx",0),btnv("online_my",0)
     for _,b in ipairs(c.buttons) do
-        if b.label>0 then
+        if b.label==8 then
+            -- Outer-ring spear cells stay invisible until hovered, then show the
+            -- Timar Cavalry Pact thrust glyph inside the cell (host draws its own).
+            if not c.sent and mx>=b.x and mx<b.x+b.w and my>=b.y and my<b.y+b.h
+                and type(coop_draw_knight_spear_icon)=="function" then
+                coop_draw_knight_spear_icon(b.x,b.y)
+            end
+        elseif b.label>0 then
             if c.kind==2 and b.label==7 and not c.sent then tear_available=true end
             if b.label~=7 then rectfill(b.x,b.y,b.x+b.w-1,b.y+b.h-1,2) end
             local color=c.sent and 3 or (b.label==7 and flr(time()*3)%2==0 and 4 or 5)

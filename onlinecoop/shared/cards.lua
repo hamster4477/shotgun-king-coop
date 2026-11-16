@@ -430,7 +430,7 @@ local rebel_type=marshal_type+1
 lang["piece_"..rebel_type]=current_lang=="simplified_chinese" and "反叛骑士" or "Rebel Knight"
 lang["short_piece_"..rebel_type]=lang["piece_"..rebel_type]
 add(PIECES,{
- type=rebel_type,name="rebel_knight",hp=40,tempo=1,boss=1,big=true,
+ type=rebel_type,name="rebel_knight",hp=45,tempo=1,boss=1,big=true,
  danger=16,seek="wdist",hdy=-16,nocarry=1,unlift=1,give_soul=false,behavior={},
  custom_dr=function(e,x,y)
   if mode and mode.coop_draw_cavalier_art and mode.coop_draw_cavalier_art(e,x,y) then return end

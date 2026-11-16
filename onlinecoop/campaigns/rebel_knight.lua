@@ -54,6 +54,33 @@ function coop_duel_close(e,sq)
  local dy=max(max(e.sq.py-sq.py,0),sq.py-e.sq.py-1)
  return max(dx,dy)==1
 end
+-- Ring index around the Knight's 2x2 footprint. Ring 1 is the ring the
+-- automatic close stab already covers; ring 2 is the outer ring that the
+-- charged spear reaches. Both use the same square-inclusive metric as
+-- coop_duel_close, so "distance 2" never disagrees with the drawn board.
+function coop_duel_ring(e,sq)
+ if not e or not e.sq or not sq then return end
+ local dx=max(max(e.sq.px-sq.px,0),sq.px-e.sq.px-1)
+ local dy=max(max(e.sq.py-sq.py,0),sq.py-e.sq.py-1)
+ return max(dx,dy)
+end
+-- The charged spear only covers straight and off-axis ring-2 squares. The
+-- four diagonal corners are excluded: a two-square diagonal lunge reads as a
+-- different move and the user vetoed it.
+function coop_duel_spear_target(e,sq)
+ if not e or not e.sq or not sq then return false end
+ local dx=max(max(e.sq.px-sq.px,0),sq.px-e.sq.px-1)
+ local dy=max(max(e.sq.py-sq.py,0),sq.py-e.sq.py-1)
+ return max(dx,dy)==2 and min(dx,dy)<2
+end
+function coop_duel_spear_squares(e)
+ local a={}
+ if not e or not e.sq then return a end
+ for _,sq in ipairs(squares) do
+  if coop_duel_spear_target(e,sq) then a[#a+1]=sq end
+ end
+ return a
+end
 function coop_duel_danger()
  local e=coop_duel_live()
  if not e or not is_coop_active() or e.stun or e.fear or e.peace then return end
@@ -65,6 +92,8 @@ function coop_duel_danger()
  for _,anchor in ipairs(a) do for dy=0,1 do for dx=0,1 do
   targets[gsq(anchor.px+dx,anchor.py+dy)]=true
  end end end
+ -- A charged spear keeps its target marked while the King gets its turn.
+ if d.spear and d.spear.sq then targets[d.spear.sq]=true end
  for sq in pairs(targets) do
   local seen=false
   for _,p in ipairs(sq.danger or {}) do if p==e then seen=true end end
@@ -89,6 +118,14 @@ function coop_duel_finish(winner)
   mode.coop_stats.knight_deaths=(mode.coop_stats.knight_deaths or 0)+1
  end
  remove_buts()
+ if d.decor and type(del)=="function" and ents then
+  -- The gifted cards are pictures, not owned cards: clear them when the duel ends.
+  for _,o in ipairs(d.decor) do
+   if o.coop_duel_slot then o.coop_duel_slot.coop_duel_gift=nil end
+   del(ents,o)
+  end
+  d.decor=nil
+ end
  mode.coop_ending_kind="duel_"..winner
  mode.coop_ending_knight_alive=winner=="knight"
  coop_freeze_throne_result()
@@ -150,6 +187,18 @@ function coop_duel_commit(e,sq,aim)
   wait(20,function() if mode.coop_duel==d then coop_duel_complete(e) end end)
  else coop_duel_complete(e) end
 end
+-- Ring 2 is out of reach in one motion: the 2P locks the square now, and the
+-- thrust itself resolves on the Knight's next action.
+function coop_duel_commit_spear(e,sq)
+ local d=mode.coop_duel
+ if not d or not d.input or d.busy or d.aim or d.hop or d.spear
+  or mode.coop_pause_menu_open or e~=coop_duel_live() then return end
+ if not sq or not coop_duel_spear_target(e,sq) then d.busy=false;coop_duel_offer(e);return end
+ d.busy=true;d.input=false;d.tear_available=false;remove_buts()
+ d.spear={sq=sq,started=time()}
+ sfx("reload")
+ wait(20,function() if mode.coop_duel==d then coop_duel_complete(e) end end)
+end
 function coop_duel_tear(e,ca)
  local d=mode.coop_duel
  if not d or not d.input or d.busy or mode.coop_pause_menu_open or e~=coop_duel_live()
@@ -187,15 +236,23 @@ function coop_duel_offer(e)
   coop_controller.begin_choices(2,function() return mode.coop_duel==d and d.input and not d.busy and not d.finished end)
  end
  local direction_label=2
- local function button(x,y,w,h,click,label,board_hint)
+ -- `icon` marks the ring-2 spear cells: they stay invisible until hovered, and
+ -- the hovered cell shows the Timar Cavalry Pact spear glyph instead of a box.
+ local function button(x,y,w,h,click,label,board_hint,icon)
   if coop_controller and coop_controller.choice_button then
    local code=board_hint and 0 or 7
-   if label then direction_label=direction_label+1;code=direction_label end
+   if icon then code=8 elseif label then direction_label=direction_label+1;code=direction_label end
    coop_controller.choice_button(x,y,w,h,code,click)
    return
   end
   local b=mk_but(x,y,w,h,click);b.dp=DP_INTER+1
   b.dr=function(o,px,py)
+   if icon then
+    if o.ov and type(coop_draw_knight_spear_icon)=="function" then
+     coop_draw_knight_spear_icon(px,py)
+    end
+    return
+   end
    if board_hint then return end
    local color=o.ov and 4 or 5
    if not label and flr(time()*3)%2==0 then color=4 end
@@ -213,6 +270,12 @@ function coop_duel_offer(e)
    local target=sq
    button(bx+sq.px*16,by+sq.py*16,32,32,function() coop_duel_commit(e,target,false) end,nil,true)
   end
+  -- Outer ring: hover-only spear cells. Clicking locks a wind-up instead of
+  -- resolving an attack, so the threat square is shown for a whole turn.
+  for _,sq in ipairs(coop_duel_spear_squares(e)) do
+   local target=sq
+   button(bx+sq.px*16,by+sq.py*16,16,16,function() coop_duel_commit_spear(e,target) end,nil,false,true)
+  end
  if d.round>=(d.tear_ready or 3) then
   for _,sl in ipairs(card_slots) do
    local ca=sl.ca
@@ -223,7 +286,7 @@ function coop_duel_offer(e)
   end
  end
  mouse("show",true)
- if _log then _log("[COOP DUEL] 2P action round="..d.round.." planned="..((d.aim or d.hop) and "yes" or "no")) end
+ if _log then _log("[COOP DUEL] 2P action round="..d.round.." planned="..((d.aim or d.hop or d.spear) and "yes" or "no")) end
 end
 function coop_duel_charge(e)
  local d=mode.coop_duel
@@ -253,13 +316,21 @@ function coop_duel_draw_charge(e,x,y,behind)
  local fx=e.coop_duel_stab_fx or e.coop_duel_charge_fx
  if e~=coop_duel_live() or mode.coop_pause_menu_open then return end
  local elapsed=fx and max(0,time()-fx.started) or 0
- if fx and fx.stab and elapsed>=.48 then fx=nil end
+ local life=fx and (fx.life or .48) or .48
+ if fx and fx.stab and elapsed>=life then fx=nil end
  local idle=not fx
+ local pending=mode.coop_duel.spear
  local aim=mode.coop_duel.aim
- local resting=idle and not aim
+ local resting=idle and not aim and not pending
  local dx,dy=0,-1
  if fx then dx,dy=fx.dx,fx.dy
- elseif aim then dx,dy=aim[1],aim[2] end
+ elseif aim then dx,dy=aim[1],aim[2]
+ elseif pending and pending.sq then
+  -- Face the locked outer-ring square while the thrust is stored.
+  local tx,ty=pending.sq.px+.5-(e.sq.px+1),pending.sq.py+.5-(e.sq.py+1)
+  local length=(tx*tx+ty*ty)^.5
+  if length>0 then dx,dy=tx/length,ty/length end
+ end
  local rear=resting and e.coop_cavalier_face=="back" or not resting and dy<0
  if behind~=rear then return end
  if not mode.coop_duel_spear_pixels then
@@ -273,12 +344,28 @@ function coop_duel_draw_charge(e,x,y,behind)
   end end
   spritesheet(previous);mode.coop_duel_spear_pixels=pixels
  end
+ if pending and not fx and (dx~=0 or dy~=0) then
+  -- Snap the stored-thrust pose to the four cardinal directions. The
+  -- original spear texture is a thin patterned shaft; rotating it to a
+  -- diagonal leaves gaps between source pixels and reads as a blur, while
+  -- axis-aligned blits stay pixel exact. The Knight's body only has four
+  -- facings, so this matches its stance.
+  if abs(dx)>abs(dy) then dx=dx<0 and -1 or 1;dy=0
+  else dx=0;dy=dy<0 and -1 or 1 end
+ end
+ local reach=fx and (fx.reach or 10) or 0
  local extension=0
  if fx and fx.stab then
-  -- Draw back, thrust, then withdraw; the hit lands at frame 14.
-  if elapsed<.12 then extension=-5*elapsed/.12
-  elseif elapsed<.24 then extension=-5+15*(elapsed-.12)/.12
-  else extension=10*(1-(elapsed-.24)/.24) end
+  -- Draw back, thrust, then withdraw. Phase lengths scale with fx.life so a
+  -- two-square spear can take longer without changing the close stab timing.
+  local back=life*.25;local mid=life*.5
+  if elapsed<back then extension=-5*elapsed/back
+  elseif elapsed<mid then extension=-5+(reach+5)*(elapsed-back)/(mid-back)
+  else extension=reach*(1-(elapsed-mid)/(life-mid)) end
+ elseif pending then
+  -- Cocked back and held still. The old sine tremble shifted the sprite by
+  -- a pixel every few frames, which looked like motion blur.
+  extension=-6
  end
  local hx,hy=x+16+dx*(9+extension),y+18+dy*(8+extension)
  if resting then
@@ -288,13 +375,13 @@ function coop_duel_draw_charge(e,x,y,behind)
  local shoulder=x+(hx<x+16 and 10 or 22)
  for offset=-1,1 do line(shoulder,y+9+offset,hx,hy+offset,1) end
  line(shoulder,y+9,hx,hy,2)
+ -- Original spear texture, rotated pixel by pixel exactly as before.
  local scale=mode.coop_duel_spear_scale or 2
  for _,p in ipairs(mode.coop_duel_spear_pixels) do
   local px,py=hx+scale*(dx*p.u-dy*p.v),hy+scale*(dy*p.u+dx*p.v)
   px=px+.5;py=py+.5;px=px-px%1;py=py-py%1
   rectfill(px,py,px+scale-1,py+scale-1,p.c)
  end
- -- The spear remains in the piece pass; ground sparks use the board underlay.
  rectfill(hx-2,hy-2,hx+2,hy+2,1)
  rectfill(hx-1,hy-1,hx+1,hy+1,4)
 end
@@ -343,6 +430,39 @@ function coop_duel_stab(e)
   if mode==run and e.coop_duel_stab_fx==fx then e.coop_duel_stab_fx=nil end
  end)
 end
+-- The charged thrust. The wind-up was already paid last turn, so this action
+-- spends itself on the locked square: the King may have stepped away, and an
+-- empty lunge costs the Knight the turn instead of tracking the King.
+function coop_duel_spear_strike(e)
+ local d=mode.coop_duel;local run=mode
+ local pending=d and d.spear
+ if not pending then return false end
+ local target=pending.sq
+ d.spear=nil
+ d.input=false;d.busy=true;mode.coop_run_active=false;remove_buts()
+ local cx,cy=e.sq.px+1,e.sq.py+1
+ local dx,dy=(target and target.px or cx)+.5-cx,(target and target.py or cy)+.5-cy
+ local length=(dx*dx+dy*dy)^.5
+ if length==0 then d.busy=false;coop_duel_offer(e);return true end
+ dx,dy=dx/length,dy/length
+ local fx={dx=dx,dy=dy,started=time(),stab=true,reach=14,life=.62,long=true}
+ e.coop_duel_stab_fx=fx
+ sfx("charge")
+ wait(20,function()
+  if mode~=run or mode.coop_duel~=d or e~=coop_duel_live() then return end
+  d.busy=false;mode.coop_run_active=true
+  local hit=target and hero and hero.sq and hero.sq.px==target.px and hero.sq.py==target.py
+  if hit and not hero.cloaked then
+   coop_duel_reinforce();xpl_king(hero)
+  else
+   coop_duel_complete(e)
+  end
+ end)
+ wait(40,function()
+  if mode==run and e.coop_duel_stab_fx==fx then e.coop_duel_stab_fx=nil end
+ end)
+ return true
+end
 function coop_duel_action(e)
  local d=mode.coop_duel
  if not d or d.finished or e~=coop_duel_live() or d.action_turn==mode.turns then return false end
@@ -350,13 +470,228 @@ function coop_duel_action(e)
  -- Defer until native opp_move has exhausted this piece.
  wait(1,function()
   if mode.coop_duel~=d or e~=coop_duel_live() then return end
+  -- The locked spear was paid for last turn and resolves before the automatic
+  -- close stab, so a charging Knight cannot also stab for free.
+  if d.spear then coop_duel_spear_strike(e)
   -- Resolve the previous position's close attack. Never hit on arrival.
-  if not e.peace and not hero.cloaked and coop_duel_close(e,hero.sq) then
+  elseif not e.peace and not hero.cloaked and coop_duel_close(e,hero.sq) then
    coop_duel_stab(e)
   else coop_duel_offer(e) end
  end)
  return true
 end
+-- Sokoban-style shove: in the duel, a white pawn that steps into the Rebel
+-- Knight's 2x2 footprint first pushes the whole boss one grid step along its
+-- travel direction, then walks into the square the boss vacated. The push is
+-- refused unless every square of the shifted footprint is free.
+function coop_duel_pawn_push(piece,destination)
+ local d=mode and mode.coop_duel
+ local e=d and d.boss
+ if not d or d.finished or d.busy or mode.coop_duel_pushing then return end
+ if not e or not e.sq or not piece or piece.team~=1 or piece.type~=0 then return end
+ if not piece.sq or not destination then return end
+ if not coop_duel_contains(destination,e.sq.px,e.sq.py) then return end
+ local dx,dy=destination.px-piece.sq.px,destination.py-piece.sq.py
+ if dx==0 and dy==0 then return end
+ local nx,ny=e.sq.px+dx,e.sq.py+dy
+ if not coop_duel_footprint(e,nx,ny,false) then return end
+ -- Never shove the boss back across the pawn's own starting square.
+ if coop_duel_contains(piece.sq,nx,ny) then return end
+ mode.coop_duel_pushing=true
+ move_piece(e,gsq(nx,ny),function() end)
+ mode.coop_duel_pushing=nil
+ if _log then
+  _log("[COOP DUEL] white pawn pushed Rebel Knight "
+   .. coop_string(e.sq.px) .. "," .. coop_string(e.sq.py)
+   .. " from " .. coop_string(piece.sq.px) .. "," .. coop_string(piece.sq.py))
+ end
+end
+prepend("move_piece",function(piece,destination)
+ if mode and mode.id=="coop" then coop_duel_pawn_push(piece,destination) end
+end,"coop_duel_pawn_push")
+-- Native white pawns never attempt a move into a same-team square, so the
+-- push has to follow a real move: when a pawn stops directly behind the boss,
+-- the same action shoves the boss one step and the pawn follows into the
+-- square it vacated.
+-- Native white pawns never attempt a move into a same-team square, so the
+-- push is tied to the pawn's own move: when the pawn's destination sits
+-- directly behind the boss, that same move shoves the boss one step and the
+-- pawn follows into the square it vacated.
+function coop_duel_pawn_shove_after(piece,destination)
+ local d=mode and mode.coop_duel
+ local e=d and d.boss
+ if not d or d.finished or d.busy or mode.coop_duel_pushing then return end
+ if d.boss_moved_phase then return end
+ if not e or not e.sq or not piece or piece.team~=1 or piece.type~=0 then return end
+ if not destination or not piece.sq or piece.sq~=destination then return end
+ local hero_sq=mode.coop_king_hero and mode.coop_king_hero.sq or (hero and hero.sq)
+ if not hero_sq then return end
+ local dy=hero_sq.py>=destination.py and 1 or -1
+ local front=gsq(destination.px,destination.py+dy)
+ if not front or not coop_duel_contains(front,e.sq.px,e.sq.py) then return end
+ local nx,ny=e.sq.px,e.sq.py+dy
+ if not coop_duel_footprint(e,nx,ny,false) then return end
+ mode.coop_duel_pushing=true
+ move_piece(e,gsq(nx,ny),function() end)
+ move_piece(piece,front,function() end)
+ mode.coop_duel_pushing=nil
+ if _log then
+  _log("[COOP DUEL] white pawn shoved Rebel Knight to "
+   .. coop_string(nx) .. "," .. coop_string(ny))
+ end
+end
+-- A pawn that has just stepped in behind the Knight arms itself on that exact
+-- move (its cd resets to 1 there); the next white phase executes the shove.
+function coop_duel_pawn_arm_after(piece,destination)
+ local d=mode and mode.coop_duel
+ local e=d and d.boss
+ if not d or d.finished or d.busy or mode.coop_duel_pushing then return end
+ if not e or not e.sq or not piece or piece.team~=1 or piece.type~=0 then return end
+ if not destination or not piece.sq or piece.sq~=destination then return end
+ if _log and piece.team==1 and piece.type==0 then
+  _log("[COOP DUEL] pawn move at " .. coop_string(destination.px) .. "," .. coop_string(destination.py)
+   .. " cd=" .. coop_string(piece.cd) .. " phase=" .. coop_string(d.white_phase))
+ end
+ if piece.coop_push_phase then return end
+ local hero_sq=mode.coop_king_hero and mode.coop_king_hero.sq or (hero and hero.sq)
+ if not hero_sq then return end
+ local dy=hero_sq.py>=destination.py and 1 or -1
+ local front=gsq(destination.px,destination.py+dy)
+ if not front or not coop_duel_contains(front,e.sq.px,e.sq.py) then return end
+ piece.coop_push_phase=d.white_phase or 0
+ piece.ready=true
+ if _log then
+  _log("[COOP DUEL] pawn armed after move at " .. coop_string(destination.px)
+   .. "," .. coop_string(destination.py))
+ end
+end
+append("move_piece",function(piece,destination)
+ if mode and mode.id=="coop" then coop_duel_pawn_arm_after(piece,destination) end
+end,"coop_duel_pawn_arm_after")
+-- The shove shares the pawn's own move turn: at the start of the white phase
+-- a pawn behind the Knight gets the native ready wobble, and at the end of
+-- that same phase it shoves only if the Knight has not stepped away.
+function coop_duel_pawn_push_cycle()
+ local d=mode and mode.coop_duel
+ local e=d and d.boss
+ if not d or d.finished or d.busy or mode.coop_duel_pushing then return end
+ if not e or not e.sq then return end
+ local hero_sq=mode.coop_king_hero and mode.coop_king_hero.sq or (hero and hero.sq)
+ if not hero_sq then return end
+ d.white_phase=(d.white_phase or 0)+1
+ for _,sq in ipairs(squares) do
+  local p=sq.p
+  if p and p.team==1 and p.type==0 and p.sq==sq then
+   local dy=hero_sq.py>=sq.py and 1 or -1
+   local front=gsq(sq.px,sq.py+dy)
+   if front and coop_duel_contains(front,e.sq.px,e.sq.py) then
+    if _log and (p.coop_log_phase or -1)~=d.white_phase then
+     p.coop_log_phase=d.white_phase
+     _log("[COOP DUEL] pawn behind Knight at " .. coop_string(sq.px) .. "," .. coop_string(sq.py)
+      .. " wait=" .. coop_string(p.wait) .. " cd=" .. coop_string(p.cd)
+      .. " tempo=" .. coop_string(p.tempo)
+      .. " ready=" .. coop_string(p.ready) .. " phase=" .. coop_string(d.white_phase))
+    end
+    local tempo=p.tempo or 1
+    if not p.coop_push_phase and (p.cd or 0)>=tempo-1 then
+     p.coop_push_phase=d.white_phase
+     p.ready=true
+     if _log then
+      _log("[COOP DUEL] pawn armed behind Knight at " .. coop_string(sq.px) .. "," .. coop_string(sq.py))
+     end
+    end
+   else
+    p.coop_push_phase=nil
+   end
+  end
+ end
+end
+function coop_duel_pawn_shove_phase()
+ local d=mode and mode.coop_duel
+ local e=d and d.boss
+ if not d or d.finished or d.busy or mode.coop_duel_pushing then return end
+ if not e or not e.sq then return end
+ local hero_sq=mode.coop_king_hero and mode.coop_king_hero.sq or (hero and hero.sq)
+ if not hero_sq then return end
+ for _,sq in ipairs(squares) do
+  local p=sq.p
+  if p and p.team==1 and p.type==0 and p.sq==sq then
+   local dy=hero_sq.py>=sq.py and 1 or -1
+   local front=gsq(sq.px,sq.py+dy)
+   if front and coop_duel_contains(front,e.sq.px,e.sq.py) then
+    local tempo=p.tempo or 1
+    if p.coop_push_phase and (p.cd or 0)>tempo then
+     local nx,ny=e.sq.px,e.sq.py+dy
+     if not coop_duel_footprint(e,nx,ny,false) then
+      if _log then
+       _log("[COOP DUEL] armed pawn blocked at " .. coop_string(sq.px) .. "," .. coop_string(sq.py)
+        .. " but no room to shove")
+      end
+     else
+      -- The Knight is 2 squares wide: a side-by-side pawn whose forward square
+      -- is also inside its footprint joins the shove and advances with it.
+      local partners={}
+      for _,dx in ipairs({-1,1}) do
+       local nsq=gsq(sq.px+dx,sq.py)
+       local q=nsq and nsq.p
+       if q and q.team==1 and q.type==0 and q.sq==nsq then
+        local qfront=gsq(nsq.px,nsq.py+dy)
+        if qfront and coop_duel_contains(qfront,e.sq.px,e.sq.py) then
+         partners[#partners+1]={p=q,front=qfront}
+        end
+       end
+      end
+      p.coop_push_phase=nil
+      p.cd=0
+      p.ready=false
+      mode.coop_duel_pushing=true
+      move_piece(e,gsq(nx,ny),function() end)
+      move_piece(p,front,function() end)
+      for _,q in ipairs(partners) do
+       q.p.coop_push_phase=nil
+       q.p.cd=0
+       q.p.ready=false
+       move_piece(q.p,q.front,function() end)
+      end
+      mode.coop_duel_pushing=nil
+      if _log then
+       _log("[COOP DUEL] armed pawn shoved Knight to " .. coop_string(nx) .. "," .. coop_string(ny)
+        .. " with " .. coop_string(#partners+1) .. " pawns")
+      end
+      return
+     end
+    end
+   else
+    p.coop_push_phase=nil
+   end
+  end
+ end
+end
+append("opp_move",function()
+ if mode and mode.id=="coop" then coop_duel_pawn_shove_phase() end
+end,"coop_duel_pawn_shove_phase")
+prepend("opp_turn",function()
+ if mode and mode.id=="coop" then
+  if _log and mode.coop_duel and not mode.coop_duel.pawn_dump then
+   mode.coop_duel.pawn_dump=true
+   local boss=mode.coop_duel.boss
+   _log("[COOP DUEL] boss at " .. coop_string(boss and boss.sq and boss.sq.px)
+    .. "," .. coop_string(boss and boss.sq and boss.sq.py))
+   for _,sq in ipairs(squares) do
+    local p=sq.p
+    if p and p.team==1 and p.type==0 then
+     _log("[COOP DUEL] pawn state " .. coop_string(sq.px) .. "," .. coop_string(sq.py)
+      .. " ready=" .. coop_string(p.ready)
+      .. " cd=" .. coop_string(p.cd)
+      .. " in_move=" .. coop_string(p.in_move)
+      .. " moved=" .. coop_string(p.moved)
+      .. " wait=" .. coop_string(p.wait))
+    end
+   end
+  end
+  coop_duel_pawn_push_cycle()
+ end
+end,"coop_duel_pawn_push_cycle")
 function coop_duel_draw_board()
  local e=coop_duel_live();local d=mode and mode.coop_duel
  if not e or mode.coop_pause_menu_open or mode.coop_hidden_boss_pending then return end
@@ -382,6 +717,17 @@ function coop_duel_draw_board()
  if d.hop then
   rect(bx+d.hop.px*16+1,by+d.hop.py*16+1,bx+d.hop.px*16+30,by+d.hop.py*16+30,5)
  end
+ if d.spear and d.spear.sq then
+  -- The stored thrust is telegraphed on its own square for the King's turn.
+  local sq=d.spear.sq;local x,y=bx+sq.px*16,by+sq.py*16
+  local pulse=flr(time()*4)%2==0
+  rect(x+1,y+1,x+14,y+14,pulse and 4 or 5)
+  rect(x+3,y+3,x+12,y+12,3)
+  rectfill(x+7,y+2,x+8,y+5,pulse and 5 or 4)
+  rectfill(x+7,y+10,x+8,y+13,pulse and 5 or 4)
+  rectfill(x+2,y+7,x+5,y+8,pulse and 5 or 4)
+  rectfill(x+10,y+7,x+13,y+8,pulse and 5 or 4)
+ end
  if d.input then
   for _,sq in ipairs(coop_duel_hops(e)) do
    rect(bx+sq.px*16+1,by+sq.py*16+1,bx+sq.px*16+30,by+sq.py*16+30,5)
@@ -401,6 +747,9 @@ function coop_duel_draw()
    lprint(current_lang=="simplified_chinese" and (cooldown==0 and "没有可撕毁的黑卡" or "撕卡冷却："..cooldown)
     or (cooldown==0 and "No black cards to tear" or "Tear cooldown: "..cooldown),bx+64,4,3,1)
   end
+ elseif d.spear then
+  lprint(current_lang=="simplified_chinese" and "2P 长矛已蓄力：下一回合戳向标记格"
+   or "2P spear charged: strikes the marked square next turn",bx+64,4,4,1)
  end
 end
 function coop_duel_lightning(e)
@@ -415,13 +764,42 @@ function coop_duel_lightning(e)
   for _,v in ipairs(a) do line(px,py,v.x,v.y,sget(o.life,1));px,py=v.x,v.y end
  end
 end
+-- Decoration only. The card art lands in the exact freed slot, but the entity
+-- never joins card_slots, so it stays out of stack/perm, adds no soul slot and
+-- cannot be torn. Native add_card would pick the first free slot and register
+-- the card, which is not what the ending is after.
+function coop_duel_gift_card(id,slot,from_x,from_y)
+ if not slot or slot.ca or slot.coop_duel_gift then return false end
+ if type(new_card)~="function" then return false end
+ local ca=new_card(id)
+ if not ca then return false end
+ local draw=ca.dr
+ ca.coop_duel_owner=mode and mode.coop_duel
+ ca.dr=function(o,x,y)
+  if not mode or mode.hide_cards or mode.coop_duel~=o.coop_duel_owner then return end
+  if draw then draw(o,x,y) end
+ end
+ ca.x=from_x or slot.x or 0
+ ca.y=from_y or slot.y or 0
+ ca.coop_duel_gift=true
+ ca.coop_duel_slot=slot;slot.coop_duel_gift=ca
+ if type(mvt)=="function" then mvt(ca,slot.x,slot.y,26) end
+ if type(sfx)=="function" then sfx("card_land",3) end
+ if mode and mode.coop_duel then
+  local d=mode.coop_duel;d.decor=d.decor or {};d.decor[#d.decor+1]=ca
+ end
+ return true
+end
 function coop_begin_duel()
  local run=mode;local knight=mode.coop_knight
- local d={round=0,tear_ready=3};mode.coop_duel=d
+ -- The first action round is 1, so 1 allows a tear before the Knight has moved;
+ -- every tear then re-arms at round+3, keeping the original three-round cadence.
+ local d={round=0,tear_ready=1};mode.coop_duel=d
  local function current() return mode==run and mode.coop_duel==d and not d.finished end
  local cards={}
  for _,id in ipairs({"Guillotine","Revolution"}) do
-  local ca=get_slot_card(id);if ca then cards[#cards+1]={ca=ca,dr=ca.dr,x=ca.x+10,y=ca.y+14} end
+  local ca=get_slot_card(id)
+  if ca then cards[#cards+1]={ca=ca,dr=ca.dr,x=ca.x+10,y=ca.y+14,slot=ca.sl} end
  end
  local function transform()
   if not current() then return end
@@ -438,6 +816,33 @@ function coop_begin_duel()
   coop_duel_install_underlay(e)
   e.alt_move=function() return coop_duel_action(e) end
   fx_spawn(e);inter.bossfight=1;start_music("boss_queen_A")
+  -- The sacrifice emptied two slots. Once the opening cinematic is over, the
+  -- Knight's own black cards fly in from where it stood: Revolution's slot
+  -- takes Knight Spirit, Guillotine's takes the Timar Cavalry Pact.
+  local bx,by=coop_get_board_geometry()
+  local from_x,from_y=bx+(sq.px+1)*16,by+(sq.py+1)*16
+  local gifts={{slot=cards[2] and cards[2].slot,id="Co-op Knight Spirit"},
+               {slot=cards[1] and cards[1].slot,id="Co-op Timar Cavalry Pact"}}
+  for i,gift in ipairs(gifts) do
+   local slot=gift.slot;local id=gift.id
+   if slot then
+    wait(24+(i-1)*10,function()
+     if not current() then return end
+     if coop_duel_gift_card(id,slot,from_x,from_y) then
+      wait(28,function()
+       if not current() or slot.ca then return end
+       local ring=mke(0,slot.x+11,slot.y+15);ring.dp=DP_FX
+       ring.dr=function(o,px,py)
+        if o.t<22 and mode==run and mode.coop_duel==d then
+         circfill(px,py,max(11-o.t/2.2,1),5)
+        end
+       end
+       d.decor=d.decor or {};d.decor[#d.decor+1]=ring
+      end)
+     end
+    end)
+   end
+  end
   wait(60,function() if current() then clean_up(refill_ammo) end end)
  end
  local function speech()

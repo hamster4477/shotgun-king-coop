@@ -40,6 +40,9 @@ function coop_cavalier_pose(e,x,y,now)
  local fx=e.coop_duel_stab_fx or e.coop_duel_charge_fx
  local dx,dy
  if fx then dx,dy=fx.dx,fx.dy
+ elseif d and d.boss==e and d.spear and d.spear.sq then
+  -- Aim at the stored outer-ring square instead of drifting back to idle.
+  dx,dy=d.spear.sq.px+.5-(e.sq.px+1),d.spear.sq.py+.5-(e.sq.py+1)
  elseif d and d.boss==e and d.aim then dx,dy=d.aim[1],d.aim[2]
  elseif d and d.boss==e and d.hop and e.sq then
   dx,dy=d.hop.px-e.sq.px,d.hop.py-e.sq.py
@@ -50,7 +53,7 @@ function coop_cavalier_pose(e,x,y,now)
   else face=dy<0 and "back" or "front" end
  end
  e.coop_cavalier_face=face
- local charging=e.coop_duel_charge_fx~=nil
+ local charging=e.coop_duel_charge_fx~=nil or (d and d.boss==e and d.spear~=nil)
  -- The front idle/jump row is distinct from the rear-facing plume.
  local row
  if face=="front" then row=charging and 3 or 1
