@@ -1,17 +1,10 @@
 -- Native game UI; the hidden local broker accepts only fixed data commands.
--- SUGAR resolves relative paths against the *last loaded* mod, so another mod
--- loading after us silently redirects these writes into that mod's folder: the
--- lobby then crashes with "could not create .../lan/lobby/<token>/discover.txt"
--- when that folder is read-only or missing. Pin our own directory at load time.
-local MOD_DIR=""
-for _,candidate in ipairs({"mods/onlinecoop/","mods/3833493529/",
-        "../../workshop/content/1972440/3833493529/",
-        "..\\..\\workshop\\content\\1972440\\3833493529\\"}) do
-    if file(candidate.."lan/lobby-config.txt") then MOD_DIR=candidate break end
-end
-local config=file(MOD_DIR.."lan/lobby-config.txt")
+-- Paths here are relative and SUGAR resolves them against the last loaded mod,
+-- so this mod must load last (priority_hint=-4) or these writes would land in
+-- another mod's folder and crash with "could not create .../lan/lobby/...".
+local config=file("lan/lobby-config.txt")
 local token=config and match(config,"^LB1|([a-f0-9]+)|END$")
-local base=token and #token==32 and MOD_DIR.."lan/lobby/"..token.."/" or nil
+local base=token and #token==32 and "lan/lobby/"..token.."/" or nil
 local ui={open=false,poll=0,seq=0,port="27841",text="",external="",mapped=false,steam=false,addresses={},address=1,state="ready",message="",cursor=0,mx=-100,my=-100}
 local function label(zh,en) return current_lang=="simplified_chinese" and zh or en end
 local function split(s)
@@ -42,7 +35,7 @@ end
 -- guaranteed for mods, so use floor arithmetic on a positive integer count.
 local function room_pages(count) return flr((count + 4) / 5) end
 -- Public endpoint is only advertised; never bind a listener to the tunnel server.
-local saved=file(MOD_DIR.."lan/public-endpoint.txt")
+local saved=file("lan/public-endpoint.txt")
 if saved and #saved<=259 and match(saved,"^[A-Za-z0-9.%-]+:%d+$") then ui.external=saved end
 local function public_endpoint(text)
     text=match(text or "","^%s*(.-)%s*$") or ""
@@ -276,7 +269,7 @@ local function copy_invite()
             ui.message=label("请填写有效的对外地址:端口","Enter a valid public hostname:port")
             return false
         end
-        file(MOD_DIR.."lan/public-endpoint.txt",ui.external)
+        file("lan/public-endpoint.txt",ui.external)
         ip,port=host,public_port
     end
     clipboard("SKCOOP1|"..ip..":"..port.."|"..key)
@@ -356,7 +349,7 @@ prepend("_update",function()
         elseif ui.mapped and (ready or ui.state=="waiting") and inside(left,92,194,17) then focus("external")
         elseif ui.mapped and (ready or ui.state=="waiting") and inside(left+200,92,64,17) then
             local host,port=public_endpoint(clipboard())
-            if host then ui.external=host..":"..port; file(MOD_DIR.."lan/public-endpoint.txt",ui.external); focus("external")
+            if host then ui.external=host..":"..port; file("lan/public-endpoint.txt",ui.external); focus("external")
             else ui.message=label("请复制 TCP 对外地址:端口","Copy TCP public hostname:port") end
 
             else ui.focus=nil end
@@ -395,7 +388,7 @@ prepend("_update",function()
                 if ui.mapped and not public_endpoint(ui.external) then
                     ui.message=label("请填写对外域名或 IP:端口","Enter public hostname or IP:port")
                 elseif port and port>=1024 and port<=65535 then
-                    if ui.mapped then file(MOD_DIR.."lan/public-endpoint.txt",ui.external) end
+                    if ui.mapped then file("lan/public-endpoint.txt",ui.external) end
                     ui.hosting=true; ui.copy_pending=true
                     request(ui.steam and "steamhost" or (ui.mapped and "hostmapped" or "host"),
                         ui.steam and "127.0.0.1" or (ui.addresses[ui.address] or "127.0.0.1"),port,"-")

@@ -60,4 +60,4 @@ mode_description={
  onlinecoop="局域网合作 / LAN Co-op|房主黑王，加入者黑骑士 / Host: King, guest: Knight"
 }
 mode_record={coop={name="最高层 / Best: ",bx=0,by=0},onlinecoop={name="最高层 / Best: ",bx=0,by=0}}
-priority_hint=10
+priority_hint=-4 -- load after the helper mods so relative lan/ paths stay ours
