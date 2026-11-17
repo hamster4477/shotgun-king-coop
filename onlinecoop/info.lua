@@ -1,6 +1,6 @@
 id = "3833493529"
 name="onlinecoop"
-title="Local & LAN Co-op"
+title="Local & Online Co-op"
 by="liber H :Aeon"
 description=[=[The Black King has a shotgun. His last loyal Knight has a blade. Play through Throne, Endless or Charnier together, with new cards that reward fighting side by side and hidden endings to discover.
 
