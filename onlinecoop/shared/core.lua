@@ -4790,6 +4790,12 @@ function coop_show_run_stats(won)
 end
 
 function start()
+    -- The Glacies Module Terminal scans every mod's env for a global named
+    -- `start` and replays it from its autocall list, which would run this in
+    -- other game modes and a second time in co-op. Guard both.
+    if not mode or mode.id ~= "coop" then return end
+    if mode.coop_start_begin == time() then return end
+    mode.coop_start_begin = time()
     if intro and not DEV then
         intro = false
         coop_start_story(false, start)
@@ -5137,6 +5143,8 @@ function grow()
 end
 
 function on_empty()
+    -- Same autocall caveat as `start`: only the co-op mode owns this callback.
+    if not mode or mode.id ~= "coop" then return end
     -- Surrender and the queued turn can both report an empty board. Starting
     -- end_level twice creates overlapping floor transitions and breaks the
     -- next floor's board/input state.
