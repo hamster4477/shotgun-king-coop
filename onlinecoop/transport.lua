@@ -1,6 +1,16 @@
 -- Data-only LAN mailbox. Game actions are validated in net_mode.lua.
+-- SUGAR resolves relative paths against the *last loaded* mod, so with another
+-- mod loaded after us every `lan/...` access below would read or write that mod's
+-- folder instead of ours (silently stopping the LAN mailbox, and crashing the
+-- lobby on write). Pin our own directory once, at load time.
+local MOD_DIR=""
+for _,candidate in ipairs({"mods/onlinecoop/","mods/3833493529/",
+        "../../workshop/content/1972440/3833493529/",
+        "..\\..\\workshop\\content\\1972440\\3833493529\\"}) do
+    if file(candidate.."lan/config.txt") then MOD_DIR=candidate break end
+end
 local prefix = "[ONLINECOOP] "
-local run_marker = file("lan/run-marker.txt")
+local run_marker = file(MOD_DIR.."lan/run-marker.txt")
 if run_marker then _log(prefix .. "RUN " .. run_marker) end
 _log(prefix .. "capabilities file=" .. type(file) .. " socket=" .. type(socket)
     .. " io=" .. type(io) .. " ffi=" .. type(ffi) .. " isfile=" .. type(isfile))
@@ -14,7 +24,7 @@ local last_config,next_config=nil,0
 local tx, rx, next_poll, next_status = 0, 0, 0, 0
 local status, previous_status = "waiting", nil
 local message_limit_reached=false
-local probe = file("lan/probe.txt") == "PING100"
+local probe = file(MOD_DIR.."lan/probe.txt") == "PING100"
 local probe_started, probe_done, pong_count = false, false, 0
 local ping_time = 0
 local total_rtt, max_rtt = 0, 0
@@ -44,7 +54,7 @@ local function configure(text)
     local version,sid,who
     if text then version,sid,who=match(text,"^OC([23])|([a-f0-9]+)|([a-z]+)|END$") end
     if sid and #sid==32 and (who=="host" or who=="client") then
-        session,role,base=sid,who,"lan/"..sid.."/"; status="waiting"
+        session,role,base=sid,who,MOD_DIR.."lan/"..sid.."/"; status="waiting"
     else session,role,base=nil,"offline",nil; status="idle" end
     tx,rx=0,0;next_poll,next_status=0,0;data_queue,data_head,data_tail={},1,0
     batch_enabled=version=="3"
@@ -54,7 +64,7 @@ local function configure(text)
     message_limit_reached=false
     onlinecoop_lan.session=session; onlinecoop_lan.role=role; onlinecoop_lan.status=status
 end
-configure(file("lan/config.txt"))
+configure(file(MOD_DIR.."lan/config.txt"))
 -- MODLIST is engine-owned and shared with the separate mode environment.
 if coop_mod_index then MODLIST[coop_mod_index].lan_transport=onlinecoop_lan end
 function onlinecoop_lan.receive()
@@ -120,7 +130,7 @@ append("_update", function()
     local now = time()
     if now>=next_config then
         next_config=now+.25
-        local config=file("lan/config.txt")
+        local config=file(MOD_DIR.."lan/config.txt")
         if config~=last_config then configure(config) end
     end
     if not base then return end
