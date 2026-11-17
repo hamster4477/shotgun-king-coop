@@ -1,6 +1,6 @@
 id = "3833493529"
 name="onlinecoop"
-title="合作模式 / Co-op"
+title="霰弹国王：本地与局域网合作 / Shotgun King: Local & LAN Co-op"
 by="liber H :Aeon"
 description=[=[The Black King has a shotgun. His last loyal Knight has a blade. Play through Throne, Endless or Charnier together, with new cards that reward fighting side by side and hidden endings to discover.
 
