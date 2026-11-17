@@ -133,7 +133,7 @@ local function coop_localize_cards(language)
     lang["Co-op Warrant"] = chinese and "通缉令" or "Warrant"
     lang["Co-op Bounty Cavalry"] = chinese and "悬赏骑兵" or "Bounty Cavalry"
     lang["Co-op Joust Compact"] = chinese and "骑士对决" or "Joust Compact"
-    lang["Co-op Excommunication"] = chinese and "绝罚" or "Excommunication"
+    lang["Co-op Excommunication"] = chinese and "异端裁定" or "Heretic’s Mark"
     lang["Co-op Divisive Edict"] = chinese and "离间法令" or "Divisive Decree"
     lang["Co-op Revenant Bell"] = chinese and "返魂警钟" or "Revenant Bell"
     lang["Co-op Royal Vigil"] = chinese and "王庭警戒" or "Royal Vigil"
