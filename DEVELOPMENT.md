@@ -40,4 +40,4 @@ The broker test starts temporary loopback helpers and stops them on completion. 
 
 Mod author: **liber H :Aeon**. Shotgun King: The Final Checkmate is a game by **PUNKCAKE Délicieux**. This is an unofficial community project and requires the original game.
 
-No project-wide open-source license has been granted at this time. Contact the author about reuse or redistribution of this project's code and assets. Third-party material retains its respective ownership and applicable terms.
+The code in this repository is released under the MIT license; see [`LICENSE`](LICENSE). The game and its original assets remain PUNKCAKE Delicieux's, and third-party material keeps its respective ownership and terms.

@@ -46,10 +46,21 @@ def release_files(root=ROOT):
     return result
 
 
+def _check_license_copy(root):
+    """The LICENSE shipped inside the mod must match the repository one."""
+    repo_license = root / 'LICENSE'
+    shipped = root / 'onlinecoop' / 'LICENSE'
+    if not repo_license.is_file():
+        raise ValueError('Missing LICENSE at the repository root')
+    if not shipped.is_file() or shipped.read_bytes() != repo_license.read_bytes():
+        raise ValueError('onlinecoop/LICENSE must be an exact copy of LICENSE')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compare', type=Path, help='Other onlinecoop folder to compare (read-only)')
     args = parser.parse_args()
+    _check_license_copy(ROOT)
     files = release_files()
     if args.compare:
         different = []

@@ -39,4 +39,4 @@ python onlinecoop/tests/test_game_broker.py
 
 模组作者：**liber H :Aeon**。《Shotgun King: The Final Checkmate》由 **PUNKCAKE Délicieux** 开发。本项目为非官方社区模组，需要原版游戏才能运行。
 
-本项目目前未授予统一的开源许可。如需复用或再分发项目代码、素材，请联系作者。第三方内容的权利归属和适用条款保持不变。
+本仓库的代码采用 MIT 许可证，见 [`LICENSE`](LICENSE)。游戏本体与原始素材版权归 PUNKCAKE Delicieux，第三方组件保留各自的许可条款。

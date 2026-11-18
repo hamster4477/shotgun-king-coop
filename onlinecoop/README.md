@@ -18,7 +18,7 @@ Added in-game prompts follow each player's game language: Simplified Chinese dis
 
 ## 1. Install and launch
 
-Both players must fully exit the game and install the same `coop-unified-r72c-lan-only.zip`. Put its `onlinecoop` folder inside the game's `mods` folder. Replace the complete mod when updating; keep your saves. Leave Steam running on both PCs. This release updates the network helper protocol too: do not mix an old helper with the new Lua files.
+Both players must fully exit the game and install the same `coop-unified-r73.zip`. Put its `onlinecoop` folder inside the game's `mods` folder. Replace the complete mod when updating; keep your saves. Leave Steam running on both PCs. This release updates the network helper protocol too: do not mix an old helper with the new Lua files.
 
 Choose an entry point inside `mods/onlinecoop`:
 
