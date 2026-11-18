@@ -1,6 +1,6 @@
 """Build the Workshop description text from the recorded canonical page text.
 
-The page text is authoritative in WORKSHOP_PAGE_TEXT.md. The published description
+The page text is authoritative in docs/WORKSHOP_PAGE_TEXT.md. The published description
 is English only: the Chinese block in that file is a reference translation and is
 never uploaded, so a restore cannot fall back to mixing the two languages.
 """
@@ -9,7 +9,7 @@ import pathlib
 import re
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
-SOURCE = REPO / 'WORKSHOP_PAGE_TEXT.md'
+SOURCE = REPO / 'docs' / 'WORKSHOP_PAGE_TEXT.md'
 
 
 def build(source=SOURCE, with_chinese=False):
