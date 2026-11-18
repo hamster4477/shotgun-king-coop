@@ -1,0 +1,76 @@
+name: Bug report
+description: Something broke during a co-op session
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill in every field. Co-op bugs are almost always version specific,
+        so a report without the version and the log is hard to act on.
+  - type: input
+    id: version
+    attributes:
+      label: Mod version
+      description: The title of the Workshop item, or the ZIP name you installed.
+      placeholder: e.g. Local & Online Co-op, coop-unified-r72d.zip
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role in the session
+      options:
+        - Host (1P, the King)
+        - Guest (2P, the Black Knight)
+        - Local co-op (one PC)
+    validations:
+      required: true
+  - type: dropdown
+    id: campaign
+    attributes:
+      label: Campaign
+      options:
+        - Throne
+        - Endless
+        - Charnier
+        - Tutorial
+        - Other / not sure
+    validations:
+      required: true
+  - type: input
+    id: floor
+    attributes:
+      label: Floor and turn
+      description: The floor number shown above the board, and roughly which turn.
+      placeholder: e.g. floor 8, around turn 15
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log excerpt
+      description: |
+        Paste the last 30 lines of `log.txt` from the game folder. Include lines
+        starting with `[COOP`, `[CLIP` or `ERR` if present. Remove invite codes and
+        IP addresses before posting.
+      render: text
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before posting
+      options:
+        - label: Both players run the same mod version
+          required: true
+        - label: The old standalone `coop` mod is disabled
+          required: true
+        - label: I removed invite codes, room keys and IP addresses from the log
+          required: false

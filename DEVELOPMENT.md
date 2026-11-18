@@ -22,7 +22,7 @@ Before packaging, run `python tools/check_release.py`. To compare against an ins
 run `python tools/check_release.py --compare "GAME_DIR/mods/onlinecoop"` with the actual path.
 This checks missing files, invalid manifest entries, and differences between copies.
 Do not overwrite a fixed installed copy with stale source files.
-See [the maintenance handoff](MAINTENANCE_zh.md) and [the final audit](FINAL_AUDIT_zh.md) (Chinese).
+See the internal notes under [`docs/internal/`](docs/internal/) — maintenance handoff, final audit and version history (Chinese).
 
 The archive is written to `dist/`. The script uses an explicit file manifest, excludes tests and runtime data, and refuses to overwrite an existing archive.
 

@@ -1,0 +1,29 @@
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependency
+        run: pip install -r onlinecoop/tests/requirements.txt
+      - name: Release allowlist
+        run: python tools/check_release.py
+      # The broker test starts Windows loopback helpers; it stays local.
+      - name: Lua-level tests
+        run: |
+          for f in onlinecoop/tests/test_*.py; do
+            case "$f" in
+              *test_game_broker.py) continue ;;
+            esac
+            echo "== $f"
+            python "$f"
+          done
