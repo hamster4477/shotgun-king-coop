@@ -138,12 +138,10 @@ function coop_finish_knight_move(knight, destination)
     if origin and origin ~= destination then
         mode.coop_last_knight_origin_sq = origin
         mode.coop_last_knight_destination_sq = destination
-        if _log then
-            _log("[COOP OCCUPANCY] after native move origin=" .. coop_trace_value(origin)
-                .. " destination=" .. coop_trace_value(destination)
-                .. " free_origin=" .. coop_string(is_free(origin))
-                .. " free_destination=" .. coop_string(is_free(destination)))
-        end
+        coop_log("[COOP OCCUPANCY] after native move origin=" .. coop_trace_value(origin)
+            .. " destination=" .. coop_trace_value(destination)
+            .. " free_origin=" .. coop_string(is_free(origin))
+            .. " free_destination=" .. coop_string(is_free(destination)))
         mode.coop_pickup_cleanup_pending = true
     end
     if mode.coop_knight_move_soul_to_spend then
@@ -159,7 +157,7 @@ function coop_finish_knight_move(knight, destination)
     -- Finish the current mouse click before exposing the King's native
     -- controls. Otherwise that same click can start a King move as well.
     mode.coop_select_king_pending = true
-    if _log then _log("[COOP INPUT] Knight jump completed; King selection queued") end
+    coop_log("[COOP INPUT] Knight jump completed; King selection queued")
     return true
 end
 
@@ -336,7 +334,7 @@ function coop_duet_king_hit(piece)
     mode.coop_duet_extra_hit = true
     hit(piece, 1)
     mode.coop_duet_extra_hit = nil
-    if _log then _log("[COOP DUET] King followed Knight on " .. coop_trace_value(piece)) end
+    coop_log("[COOP DUET] King followed Knight on " .. coop_trace_value(piece))
 end
 
 function coop_knight_pawn_damage_bonus(target)
@@ -352,12 +350,12 @@ function coop_knight_attack_damage(knight, multiplier, target, base_damage)
         + coop_knight_pawn_damage_bonus(target)
     if ritual_bonus > 0 then
         mode.coop_ritual_dagger_pending = false
-        if _log then _log("[COOP RITUAL DAGGER] Knight attack consumed blade +1") end
+        coop_log("[COOP RITUAL DAGGER] Knight attack consumed blade +1")
     end
     if mode and mode.coop_rally_pending then
         if knight then knight.blade = max(1, (knight.blade or 3) - 1) end
         mode.coop_rally_pending = false
-        if _log then _log("[COOP RALLY] temporary blade consumed by Knight attack") end
+        coop_log("[COOP RALLY] temporary blade consumed by Knight attack")
     end
     return damage
 end
@@ -399,7 +397,7 @@ function coop_award_ritual_dagger_kill(piece, native_kill)
     if native_kill or piece.dead == true
         or (type(piece.hp) == "number" and piece.hp <= 0) then
         mode.coop_ritual_dagger_pending = true
-        if _log then _log("[COOP RITUAL DAGGER] King blade kill; Knight blade +1 queued") end
+        coop_log("[COOP RITUAL DAGGER] King blade kill; Knight blade +1 queued")
     end
     mode.coop_ritual_dagger_target = nil
 end
@@ -424,10 +422,8 @@ function coop_try_rally_reload(source)
     if mode.coop_knight then
         mode.coop_knight.blade = (mode.coop_knight.blade or 3) + 1
     end
-    if _log then
-        _log("[COOP RALLY] " .. source .. " with chamber=" .. coop_string(loaded)
-            .. "; temporary Knight blade +1")
-    end
+    coop_log("[COOP RALLY] " .. source .. " with chamber=" .. coop_string(loaded)
+        .. "; temporary Knight blade +1")
 end
 
 function coop_finish_grindstone_turn()
@@ -445,10 +441,8 @@ function coop_finish_grindstone_turn()
     if mode.coop_knight then
         mode.coop_knight.blade = (mode.coop_knight.blade or 3) + 1
     end
-    if _log then
-        _log("[COOP GRINDSTONE] turns=" .. coop_string(mode.coop_grindstone_turns)
-            .. " knight_bonus=" .. coop_string(mode.coop_grindstone_bonus))
-    end
+    coop_log("[COOP GRINDSTONE] turns=" .. coop_string(mode.coop_grindstone_turns)
+        .. " knight_bonus=" .. coop_string(mode.coop_grindstone_bonus))
 end
 
 function coop_watch_bishop_preparation()
@@ -483,17 +477,13 @@ function coop_watch_bishop_preparation()
         if penalty > 0 then
             knight.blade = before - penalty
             knight.coop_excommunication_penalty = penalty
-            if _log then
-                _log("[COOP EXCOMMUNICATION] ready blade="
-                    .. coop_string(before) .. "->" .. coop_string(knight.blade))
-            end
+            coop_log("[COOP EXCOMMUNICATION] ready blade="
+                .. coop_string(before) .. "->" .. coop_string(knight.blade))
         end
     elseif not bishop_ready and penalty > 0 then
         knight.blade = (knight.blade or 3) + penalty
         knight.coop_excommunication_penalty = nil
-        if _log then
-            _log("[COOP EXCOMMUNICATION] ended blade=" .. coop_string(knight.blade))
-        end
+        coop_log("[COOP EXCOMMUNICATION] ended blade=" .. coop_string(knight.blade))
     end
 end
 
@@ -534,11 +524,9 @@ function coop_refresh_divisive_edict()
         stack.firepower = (stack.firepower or 0) - 1
     end
     mode.coop_divisive_edict_applied_state = state
-    if _log then
-        _log("[COOP DIVISIVE EDICT] state=" .. coop_string(state)
-            .. " spread=" .. coop_string(stack.spread)
-            .. " firepower=" .. coop_string(stack.firepower))
-    end
+    coop_log("[COOP DIVISIVE EDICT] state=" .. coop_string(state)
+        .. " spread=" .. coop_string(stack.spread)
+        .. " firepower=" .. coop_string(stack.firepower))
 end
 
 function coop_get_knight_input_targets(knight)
@@ -696,19 +684,15 @@ function coop_spawn_barricades()
     end
     mode.coop_barricade_floor = mode.lvl
     mode.coop_barricades_pending = nil
-    if _log then
-        _log("[COOP BARRICADE] spawned=" .. coop_string(#mode.coop_barricade_squares)
-            .. " floor=" .. coop_string(mode.lvl))
-    end
+    coop_log("[COOP BARRICADE] spawned=" .. coop_string(#mode.coop_barricade_squares)
+        .. " floor=" .. coop_string(mode.lvl))
 end
 
 function coop_break_king_barricade()
     if not is_coop_active() or not hero or not coop_has_barricade(hero.sq) then return end
     mode.coop_barricades[hero.sq] = nil
     if type(sfx) == "function" then sfx("blade") end
-    if _log then
-        _log("[COOP BARRICADE] King dismantled " .. coop_trace_value(hero.sq))
-    end
+    coop_log("[COOP BARRICADE] King dismantled " .. coop_trace_value(hero.sq))
 end
 
 function coop_draw_barricades()
@@ -771,7 +755,7 @@ function coop_expire_phantoms()
         if coop_phantom_is_live(piece) then fx_ascend(piece) end
     end
     mode.coop_phantoms = {}
-    if _log then _log("[COOP PHANTOM] all remaining phantoms vanished after nine turns") end
+    coop_log("[COOP PHANTOM] all remaining phantoms vanished after nine turns")
 end
 
 function coop_queue_phantom_turn()
@@ -802,7 +786,7 @@ function coop_spawn_pending_phantoms()
         or (mode.turns or 0) + 1 < pending.turn then return end
     local spawn = coop_find_phantom_spawn_squares()
     if not spawn then
-        if _log then _log("[COOP PHANTOM] next-turn spawn delayed: six free lanes unavailable") end
+        coop_log("[COOP PHANTOM] next-turn spawn delayed: six free lanes unavailable")
         return
     end
     local summoned = {}
@@ -822,7 +806,7 @@ function coop_spawn_pending_phantoms()
     end
     if #summoned ~= 6 then
         for _, entry in ipairs(summoned) do fx_ascend(entry.piece) end
-        if _log then _log("[COOP PHANTOM] next-turn spawn delayed: creation failed") end
+        coop_log("[COOP PHANTOM] next-turn spawn delayed: creation failed")
         return
     end
     mode.coop_phantoms = summoned
@@ -835,23 +819,19 @@ function coop_spawn_pending_phantoms()
         -- Stagger only the first wait; subsequent moves use Knight tempo.
         piece.cd = entry.group - 1
         piece.ready = entry.group == 1
-        if _log then
-            _log("[COOP PHANTOM] spawn group=" .. coop_string(entry.group)
-                .. " cd=" .. coop_string(piece.cd)
-                .. " ready=" .. coop_string(piece.ready)
-                .. " npc=" .. coop_string(piece.npc))
-        end
+        coop_log("[COOP PHANTOM] spawn group=" .. coop_string(entry.group)
+            .. " cd=" .. coop_string(piece.cd)
+            .. " ready=" .. coop_string(piece.ready)
+            .. " npc=" .. coop_string(piece.npc))
     end
-    if _log then
-        _log("[COOP PHANTOM] spawned on next turn floor=" .. coop_string(mode.lvl)
-            .. " spawned=" .. coop_string(#mode.coop_phantoms))
-    end
+    coop_log("[COOP PHANTOM] spawned on next turn floor=" .. coop_string(mode.lvl)
+        .. " spawned=" .. coop_string(#mode.coop_phantoms))
 end
 
 function coop_activate_mechanism_order()
     if not coop_can_activate_mechanism_order() then return false end
     if not coop_find_phantom_spawn_squares() then
-        if _log then _log("[COOP PHANTOM] activation deferred: six free lanes unavailable") end
+        coop_log("[COOP PHANTOM] activation deferred: six free lanes unavailable")
         return false
     end
     local knight = mode.coop_knight
@@ -863,11 +843,9 @@ function coop_activate_mechanism_order()
     fx_ascend(knight)
     coop_mark_knight_dead(knight)
     sfx("blade")
-    if _log then
-        _log("[COOP PHANTOM] sacrifice floor=" .. coop_string(mode.lvl)
-            .. " turn=" .. coop_string(mode.turns)
-            .. " spawn_turn=" .. coop_string(mode.coop_phantom_pending.turn))
-    end
+    coop_log("[COOP PHANTOM] sacrifice floor=" .. coop_string(mode.lvl)
+        .. " turn=" .. coop_string(mode.turns)
+        .. " spawn_turn=" .. coop_string(mode.coop_phantom_pending.turn))
     return true
 end
 
@@ -959,12 +937,10 @@ function coop_record_knight_kill_ui(victim, victim_square, attacks)
     end
     pruned_count = pruned_count + coop_prune_dead_attackers(victim_square)
     mode.coop_killed_button_refresh_pending = true
-    if _log then
-        _log("[COOP KILL UI] recorded victim=" .. coop_trace_value(victim)
-            .. " square=" .. coop_trace_value(victim_square)
-            .. " attack_squares=" .. coop_string(attack_count)
-            .. " stale_danger_removed=" .. coop_string(pruned_count))
-    end
+    coop_log("[COOP KILL UI] recorded victim=" .. coop_trace_value(victim)
+        .. " square=" .. coop_trace_value(victim_square)
+        .. " attack_squares=" .. coop_string(attack_count)
+        .. " stale_danger_removed=" .. coop_string(pruned_count))
 end
 
 function coop_knight_can_blade_target(knight, target_sq)
@@ -996,6 +972,10 @@ end
 function coop_knight_can_attack_target(knight, target_sq)
     return coop_knight_can_blade_target(knight, target_sq)
         or coop_knight_can_spear_target(knight, target_sq)
+end
+
+function coop_log(message)
+    if _log then _log(message) end
 end
 
 function coop_string(value)
@@ -1086,7 +1066,7 @@ function coop_award_warrant_knight_soul(piece)
         mode.coop_soul_refund_origin_py = nil
         piece.coop_warrant_soul_awarded = true
         add_soul(1)
-        if _log then _log("[COOP WARRANT] awarded Knight soul") end
+        coop_log("[COOP WARRANT] awarded Knight soul")
     end
 end
 
@@ -1105,10 +1085,8 @@ function coop_assign_warrant_hunter()
                 piece.coop_warrant_hunter = true
                 mode.coop_warrant_hunter = piece
                 mode.coop_warrant_assigned_floor = mode.lvl
-                if _log then
-                    _log("[COOP WARRANT] 缉骑官 assigned on floor "
-                        .. coop_string(mode.lvl) .. " at " .. coop_trace_value(sq))
-                end
+                coop_log("[COOP WARRANT] 缉骑官 assigned on floor "
+                    .. coop_string(mode.lvl) .. " at " .. coop_trace_value(sq))
                 return
             end
         end
@@ -1123,10 +1101,8 @@ function coop_assign_warrant_hunter()
     mode.coop_warrant_hunter = piece
     mode.coop_warrant_assigned_floor = mode.lvl
     if type(fx_spawn) == "function" then fx_spawn(piece) end
-    if _log then
-        _log("[COOP WARRANT] spawned on floor " .. coop_string(mode.lvl)
-            .. " at " .. coop_trace_value(spawn_sq))
-    end
+    coop_log("[COOP WARRANT] spawned on floor " .. coop_string(mode.lvl)
+        .. " at " .. coop_trace_value(spawn_sq))
 end
 
 function coop_record_bounty_kill(piece, hp_before)
@@ -1155,10 +1131,8 @@ function coop_record_bounty_kill(piece, hp_before)
         mode.coop_bounty_pending = mode.coop_bounty_pending or {}
         add(mode.coop_bounty_pending, reinforcement_type)
     end
-    if _log then
-        _log("[COOP BOUNTY] Knight kill count=" .. coop_string(mode.coop_bounty_kills)
-            .. " queued=" .. coop_string(reinforcement_type))
-    end
+    coop_log("[COOP BOUNTY] Knight kill count=" .. coop_string(mode.coop_bounty_kills)
+        .. " queued=" .. coop_string(reinforcement_type))
 end
 
 function coop_bounty_spawn_square()
@@ -1180,9 +1154,7 @@ function coop_queue_royal_vigil(piece)
         or not piece or piece.team ~= 1 or piece.type ~= 5
         or piece.dead == true or not piece.hp or piece.hp <= 0 then return end
     mode.coop_royal_vigil_pending = (mode.coop_royal_vigil_pending or 0) + 1
-    if _log then
-        _log("[COOP ROYAL VIGIL] queued Warden for next turn")
-    end
+    coop_log("[COOP ROYAL VIGIL] queued Warden for next turn")
 end
 
 function coop_knight_guarded_blade_damage(target, damage)
@@ -1217,10 +1189,8 @@ function coop_grand_phalanx_blade_damage(target, damage)
                 local neighbor = coop_piece_on_square(sq)
                 if neighbor and neighbor ~= target
                     and neighbor.team == 1 and neighbor.type == 0 then
-                    if _log then
-                        _log("[COOP GRAND PHALANX] adjacent white pawn; blade "
-                            .. coop_string(damage) .. "->" .. coop_string(max(0, damage - 1)))
-                    end
+                    coop_log("[COOP GRAND PHALANX] adjacent white pawn; blade "
+                        .. coop_string(damage) .. "->" .. coop_string(max(0, damage - 1)))
                     return max(0, damage - 1)
                 end
             end
@@ -1241,11 +1211,9 @@ function coop_apply_blade_revenge(piece)
     else
         piece.cd = piece.cd + 1
     end
-    if _log then
-        _log("[COOP BLADE REVENGE] type=" .. coop_string(piece.type)
-            .. " cd=" .. coop_string(before) .. "->" .. coop_string(piece.cd)
-            .. " tempo=" .. coop_string(piece.tempo))
-    end
+    coop_log("[COOP BLADE REVENGE] type=" .. coop_string(piece.type)
+        .. " cd=" .. coop_string(before) .. "->" .. coop_string(piece.cd)
+        .. " tempo=" .. coop_string(piece.tempo))
 end
 
 function coop_knight_sweep_targets(knight_square, target_square)
@@ -1304,10 +1272,8 @@ function coop_apply_knight_sweep(targets)
                 coop_record_bounty_kill(piece, hp_before)
                 coop_queue_royal_vigil(piece)
                 coop_apply_blade_revenge(piece)
-                if _log then
-                    _log("[COOP SWEEP] target=" .. coop_trace_value(piece)
-                        .. " damage=" .. coop_string(damage))
-                end
+                coop_log("[COOP SWEEP] target=" .. coop_trace_value(piece)
+                    .. " damage=" .. coop_string(damage))
             end
         end
     end
@@ -1336,10 +1302,8 @@ function coop_spawn_bounty_reinforcement()
     mode.coop_bounty_notice = {
         piece_type = piece_type, floor = mode.lvl, started = time(),
     }
-    if _log then
-        _log("[COOP REINFORCEMENT] spawned type=" .. coop_string(piece_type)
-            .. " at " .. coop_trace_value(sq))
-    end
+    coop_log("[COOP REINFORCEMENT] spawned type=" .. coop_string(piece_type)
+        .. " at " .. coop_trace_value(sq))
 end
 
 function coop_spawn_revival_bishops()
@@ -1356,9 +1320,7 @@ function coop_spawn_revival_bishops()
         if not bishop then break end
         spawned = spawned + 1
         if type(fx_spawn) == "function" then fx_spawn(bishop) end
-        if _log then
-            _log("[COOP REVENANT BELL] spawned Bishop at " .. coop_trace_value(sq))
-        end
+        coop_log("[COOP REVENANT BELL] spawned Bishop at " .. coop_trace_value(sq))
     end
     mode.coop_revival_bishops_pending = pending - spawned
     if spawned > 0 then
@@ -1400,7 +1362,7 @@ function coop_resolve_warrant_knight_check()
         or knight ~= mode.coop_knight or not knight.sq then return end
     local hunter = coop_adjacent_warrant_hunter(knight)
     if not hunter then return end
-    if _log then _log("[COOP WARRANT] 缉骑官 executes adjacent Black Knight") end
+    coop_log("[COOP WARRANT] 缉骑官 executes adjacent Black Knight")
     mode.coop_warrant_execution_fx = {
         floor = mode.lvl, started = time(),
         hunter_x = hunter.sq.px, hunter_y = hunter.sq.py,
@@ -1576,7 +1538,7 @@ function coop_mark_knight_dead(piece)
         coop_set_selected("king")
     end
     print("[COOP] knight death recorded")
-    if _log then _log("[COOP] knight death recorded at floor " .. coop_string(mode.lvl)) end
+    coop_log("[COOP] knight death recorded at floor " .. coop_string(mode.lvl))
     return true
 end
 
@@ -1629,11 +1591,9 @@ function coop_track_knight_presence()
     -- An enemy occupying the Knight's current square is a completed capture,
     -- even if this game build leaves the removed piece's `sq` reference set.
     if knight.sq and knight.sq.piece and knight.sq.piece ~= knight then
-        if _log then
-            _log("[COOP GUARD] Knight square occupied by "
-                .. coop_trace_value(knight.sq.piece)
-                .. " at " .. coop_trace_value(knight.sq))
-        end
+        coop_log("[COOP GUARD] Knight square occupied by "
+            .. coop_trace_value(knight.sq.piece)
+            .. " at " .. coop_trace_value(knight.sq))
         coop_mark_knight_dead(knight)
         return
     end
@@ -1669,40 +1629,50 @@ function coop_record_knight_state_before_floor_change()
     end
 end
 
+local function coop_trace_square(value)
+    -- The native board stores its occupant in `p`. `piece` is only used by
+    -- some UI paths, so logging that field alone hid occupied squares.
+    local occupant = value.p or value.piece
+    if type(occupant) ~= "table" then occupant = nil end
+    local label = occupant and (occupant.name or ("type" .. coop_string(occupant.type))) or "empty"
+    return "square(" .. coop_string(value.px) .. "," .. coop_string(value.py) .. "," .. label .. ")"
+end
+
+local function coop_trace_ranges(value)
+    local ranges = {}
+    for key, child in pairs(value) do
+        if type(child) == "table" and #child > 0 then
+            local king_count = 0
+            for _, target in ipairs(child) do
+                if coop_is_white_king(target) then king_count = king_count + 1 end
+            end
+            add(ranges, coop_string(key) .. "[" .. coop_string(#child) .. ";king=" .. coop_string(king_count) .. "]")
+        end
+    end
+    return #ranges > 0 and (",lists=" .. coop_join(ranges, "/")) or ""
+end
+
+local function coop_trace_piece(value, range_info)
+    return "piece(" .. coop_string(value.name or "?") .. ",type=" .. coop_string(value.type)
+        .. ",team=" .. coop_string(value.team) .. ",sq=" .. coop_string(value.sq and value.sq.px)
+        .. "," .. coop_string(value.sq and value.sq.py) .. (range_info or "") .. ")"
+end
+
 function coop_trace_value(value)
     if type(value) ~= "table" then return type(value) .. ":" .. coop_string(value) end
-    if value.px ~= nil and value.py ~= nil then
-        -- The native board stores its occupant in `p`. `piece` is only used
-        -- by some UI paths, so logging that field alone hid occupied squares.
-        local occupant = value.p or value.piece
-        if type(occupant) ~= "table" then occupant = nil end
-        local label = occupant and (occupant.name or ("type" .. coop_string(occupant.type))) or "empty"
-        return "square(" .. coop_string(value.px) .. "," .. coop_string(value.py) .. "," .. label .. ")"
-    end
+    if value.px ~= nil and value.py ~= nil then return coop_trace_square(value) end
     if value.name or value.type ~= nil then
-        local ranges = {}
         if value.name == "coop_knight" then
-            for key, child in pairs(value) do
-                if type(child) == "table" and #child > 0 then
-                    local king_count = 0
-                    for _, target in ipairs(child) do
-                        if coop_is_white_king(target) then king_count = king_count + 1 end
-                    end
-                    add(ranges, coop_string(key) .. "[" .. coop_string(#child) .. ";king=" .. coop_string(king_count) .. "]")
-                end
-            end
+            return coop_trace_piece(value, coop_trace_ranges(value))
         end
-        local range_info = #ranges > 0 and (",lists=" .. coop_join(ranges, "/")) or ""
-        return "piece(" .. coop_string(value.name or "?") .. ",type=" .. coop_string(value.type)
-            .. ",team=" .. coop_string(value.team) .. ",sq=" .. coop_string(value.sq and value.sq.px)
-            .. "," .. coop_string(value.sq and value.sq.py) .. range_info .. ")"
+        return coop_trace_piece(value)
     end
     return "table"
 end
 
 function coop_ignore_stale_button() end
 
-function coop_safe_all_buttons(allow_surrender_lock)
+function coop_get_stable_buttons(allow_surrender_lock)
     -- The native button tree is rebuilt between floors and while entering
     -- menus or processing a move. Do not traverse it until the board and
     -- native event queue are stable again.
@@ -1737,7 +1707,7 @@ function coop_native_menu_button_at(x, y)
     -- Undercover Mission can put a choice button over the board while the
     -- King's post-move click guard is active. Leave that button's click for
     -- the native UI; only square buttons represent board actions here.
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return false end
     for _, button in ipairs(buttons) do
         if type(button) == "table" and not button.issq
@@ -1823,7 +1793,7 @@ end
 function coop_mute_spent_soul_buttons(guard)
     if not guard or not guard.soul or guard.soul.id ~= nil
         or type(get_all_buts) ~= "function" then return end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return end
     guard.buttons = guard.buttons or {}
     for _, button in ipairs(buttons) do
@@ -1852,12 +1822,10 @@ function coop_mute_spent_soul_buttons(guard)
             button.left_clic = coop_ignore_stale_button
             button.right_clic = coop_ignore_stale_button
             button.over = coop_ignore_stale_button
-            if _log then
-                _log("[COOP SOUL] muted exhausted slot button x="
-                    .. coop_string(button.x) .. " y=" .. coop_string(button.y)
-                    .. " w=" .. coop_string(button.w)
-                    .. " h=" .. coop_string(button.h))
-            end
+            coop_log("[COOP SOUL] muted exhausted slot button x="
+                .. coop_string(button.x) .. " y=" .. coop_string(button.y)
+                .. " w=" .. coop_string(button.w)
+                .. " h=" .. coop_string(button.h))
         end
     end
 end
@@ -1878,7 +1846,7 @@ function coop_restore_spent_soul_buttons(guard)
     -- exhausted-slot buttons only after switching back to the King, otherwise
     -- the saved hover callback can re-enable the King's range preview there.
     if not mode or mode.coop_selected ~= "king" then return nil end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     -- A refill can happen during a kill animation. At that point the native
     -- button tree is temporarily unsafe to scan; keep the guard for an idle
     -- frame instead of discarding its saved callback.
@@ -1962,14 +1930,12 @@ function coop_restore_spent_soul(guard)
         -- native add_soul path reuses the descriptor without resetting ov.
         guard.soul.ov = guard.ov
         guard.descriptor_restored = true
-        if _log then
-            _log("[COOP SOUL] restored filled slot x=" .. coop_string(guard.soul.x)
-                .. " y=" .. coop_string(guard.soul.y)
-                .. " id=" .. coop_string(guard.soul.id)
-                .. " oid=" .. coop_string(guard.soul.oid)
-                .. " draw=" .. type(guard.soul.dr)
-                .. " ov=" .. coop_string(guard.soul.ov))
-        end
+        coop_log("[COOP SOUL] restored filled slot x=" .. coop_string(guard.soul.x)
+            .. " y=" .. coop_string(guard.soul.y)
+            .. " id=" .. coop_string(guard.soul.id)
+            .. " oid=" .. coop_string(guard.soul.oid)
+            .. " draw=" .. type(guard.soul.dr)
+            .. " ov=" .. coop_string(guard.soul.ov))
     end
     return coop_restore_spent_soul_buttons(guard) ~= nil
 end
@@ -2023,11 +1989,9 @@ function coop_restore_refilled_soul(slot)
         slot.dr = slot.coop_native_draw
         slot.ov = slot.coop_native_ov
         if slot.oid == nil then slot.oid = slot.coop_native_oid end
-        if _log then
-            _log("[COOP SOUL] restored persistent slot draw x="
-                .. coop_string(slot.x) .. " y=" .. coop_string(slot.y)
-                .. " id=" .. coop_string(slot.id))
-        end
+        coop_log("[COOP SOUL] restored persistent slot draw x="
+            .. coop_string(slot.x) .. " y=" .. coop_string(slot.y)
+            .. " id=" .. coop_string(slot.id))
     end
 end
 
@@ -2067,7 +2031,7 @@ end
 
 function coop_get_soul_button_at(x, y)
     if type(get_all_buts) ~= "function" then return nil end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return nil end
     local board_left = coop_get_board_geometry()
     for _, button in ipairs(buttons) do
@@ -2160,7 +2124,7 @@ function coop_sync_knight_soul_hover()
             end
         end
         if not has_live_soul then return end
-        local buttons = coop_safe_all_buttons()
+        local buttons = coop_get_stable_buttons()
         if type(buttons) == "table" then
             local board_left = coop_get_board_geometry()
             for _, button in ipairs(buttons) do
@@ -2188,7 +2152,7 @@ function coop_sync_knight_soul_hover()
     local has_guards = false
     for _ in pairs(guards) do has_guards = true break end
     if not has_guards then return end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return end
     local live_buttons = {}
     for _, button in ipairs(buttons) do live_buttons[button] = true end
@@ -2212,7 +2176,7 @@ function coop_lock_surrender_controls()
     mode.coop_cursor_refresh_pending = false
     if hero then hero.ready = false end
     if type(get_all_buts) ~= "function" then return end
-    local buttons = coop_safe_all_buttons(true)
+    local buttons = coop_get_stable_buttons(true)
     if type(buttons) ~= "table" then return end
     for _, button in ipairs(buttons) do
         if type(button) == "table" and button.issq then
@@ -2235,7 +2199,7 @@ function coop_mute_king_button_on_knight_square()
     local board_left, board_top = coop_get_board_geometry()
     local x = board_left + knight_sq.px * 16
     local y = board_top + knight_sq.py * 16
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return end
     for _, button in ipairs(buttons) do
         if type(button) == "table" and button.issq
@@ -2252,7 +2216,7 @@ end
 function coop_mute_stale_knight_pickup(rebuild_arrow)
     if not mode or mode.id ~= "coop" or not mode.coop_last_knight_origin_sq
         or type(get_all_buts) ~= "function" then return end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return end
     local old_square = mode.coop_last_knight_origin_sq
     local board_left, board_top = coop_get_board_geometry()
@@ -2271,7 +2235,7 @@ function coop_mute_stale_knight_pickup(rebuild_arrow)
             muted = muted + 1
         end
     end
-    if _log then _log("[COOP PICKUP] muted stale old-square buttons=" .. muted) end
+    coop_log("[COOP PICKUP] muted stale old-square buttons=" .. muted)
 
     -- The old square is empty after the jump, but the native movement
     -- buttons were built while the Knight still occupied it. Add the same
@@ -2299,10 +2263,8 @@ function coop_mute_stale_knight_pickup(rebuild_arrow)
                     if direction ~= nil then
                         mk_sq_but(old_square, coop_ignore_stale_button, direction)
                     end
-                    if _log then
-                        _log("[COOP PICKUP] rebuilt King move arrow at old Knight square direction="
-                            .. coop_string(direction))
-                    end
+                    coop_log("[COOP PICKUP] rebuilt King move arrow at old Knight square direction="
+                        .. coop_string(direction))
                     break
                 end
             end
@@ -2313,7 +2275,7 @@ end
 function coop_mute_dead_victim_button()
     if not is_coop_active() or mode.coop_selected ~= "king"
         or not mode.coop_knight_killed_square then return false end
-    local buttons = coop_safe_all_buttons()
+    local buttons = coop_get_stable_buttons()
     if type(buttons) ~= "table" then return false end
     local board_left, board_top = coop_get_board_geometry()
     local muted = 0
@@ -2354,7 +2316,7 @@ function coop_mute_dead_victim_button()
             end
         end
     end
-    if _log then _log("[COOP CURSOR] replaced dead victim button count=" .. coop_string(muted)) end
+    coop_log("[COOP CURSOR] replaced dead victim button count=" .. coop_string(muted))
     return true
 end
 
@@ -2421,13 +2383,11 @@ function spawn_coop_knight(force_revive)
     local spawn_sq = coop_find_knight_spawn_square()
 
     if spawn_sq then
-        if _log then
-            _log("[COOP SPAWN] creating Knight floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " king=" .. coop_trace_value(hero.sq)
-                .. " square=" .. coop_trace_value(spawn_sq)
-                .. " opening=" .. coop_string(mode.coop_opening_king_turn))
-        end
+        coop_log("[COOP SPAWN] creating Knight floor=" .. coop_string(mode.lvl)
+            .. " turn=" .. coop_string(mode.turns)
+            .. " king=" .. coop_trace_value(hero.sq)
+            .. " square=" .. coop_trace_value(spawn_sq)
+            .. " opening=" .. coop_string(mode.coop_opening_king_turn))
         mode.coop_knight = new_piece(knight_type, false, spawn_sq)
         if mode.coop_knight then
             -- Native target lists must stay empty; co-op input owns both
@@ -2482,7 +2442,7 @@ function revive_coop_knight()
         if has_card and has_card("Co-op Revenant Bell") then
             mode.coop_revival_bishops_pending =
                 (mode.coop_revival_bishops_pending or 0) + 2
-            if _log then _log("[COOP REVENANT BELL] queued two Bishops") end
+            coop_log("[COOP REVENANT BELL] queued two Bishops")
         end
     end
 end
@@ -2529,20 +2489,16 @@ function coop_complete_soul_revival()
         -- after exhaust_soul clears its id. Keep that button muted until this
         -- descriptor receives a new soul or the floor's UI is rebuilt.
         mode.coop_spent_soul_click_guard = coop_track_spent_soul(revival_soul)
-        if _log then
-            _log("[COOP SOUL] spend Knight soul for 2P revive; empty_slot_before="
-                .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
-        end
+        coop_log("[COOP SOUL] spend Knight soul for 2P revive; empty_slot_before="
+            .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
         mode.coop_stats_soul_owner = 1
         exhaust_soul(revival_soul)
         mode.coop_stats_soul_owner = nil
         coop_hide_spent_soul(mode.coop_spent_soul_click_guard)
-        if _log then
-            _log("[COOP SOUL] spent Knight soul for 2P revive; empty_slot_after="
-                .. coop_string(get_empty_soul_slot and get_empty_soul_slot())
-                .. " id=" .. coop_string(revival_soul.id)
-                .. " oid=" .. coop_string(revival_soul.oid))
-        end
+        coop_log("[COOP SOUL] spent Knight soul for 2P revive; empty_slot_after="
+            .. coop_string(get_empty_soul_slot and get_empty_soul_slot())
+            .. " id=" .. coop_string(revival_soul.id)
+            .. " oid=" .. coop_string(revival_soul.oid))
     end
     -- Clear the king's visible temporary soul fields after activation. This
     -- does not cancel the native soul-selection transaction; the right-click
@@ -2563,13 +2519,11 @@ function coop_complete_soul_revival()
     -- a stale soul target can bypass normal King move warnings and the enemy
     -- phase on the revival turn.
     mode.coop_cursor_refresh_pending = true
-    if _log then
-        _log("[COOP SOUL] immediate revive result knight=" .. coop_string(mode.coop_knight ~= nil)
-            .. " died=" .. coop_string(mode.knight_ever_died)
-            .. " hero.soul=" .. coop_string(hero and hero.soul)
-            .. " hero.c_soul=" .. coop_string(hero and hero.c_soul)
-            .. " empty_slot=" .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
-    end
+    coop_log("[COOP SOUL] immediate revive result knight=" .. coop_string(mode.coop_knight ~= nil)
+        .. " died=" .. coop_string(mode.knight_ever_died)
+        .. " hero.soul=" .. coop_string(hero and hero.soul)
+        .. " hero.c_soul=" .. coop_string(hero and hero.c_soul)
+        .. " empty_slot=" .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
 end
 
 function coop_anchor_knight_charge(knight, target)
@@ -2587,13 +2541,11 @@ function coop_anchor_knight_charge(knight, target)
         dx=dx, dy=dy, floor=mode.lvl,
         target_px=target.px, target_py=target.py
     }
-    if _log then
-        _log("[COOP CHARGE] anchored floor=" .. coop_string(mode.lvl)
-            .. " turn=" .. coop_string(mode.turns)
-            .. " from=" .. coop_trace_value(knight.sq)
-            .. " target=" .. coop_trace_value(target)
-            .. " direction=" .. coop_string(dx) .. "," .. coop_string(dy))
-    end
+    coop_log("[COOP CHARGE] anchored floor=" .. coop_string(mode.lvl)
+        .. " turn=" .. coop_string(mode.turns)
+        .. " from=" .. coop_trace_value(knight.sq)
+        .. " target=" .. coop_trace_value(target)
+        .. " direction=" .. coop_string(dx) .. "," .. coop_string(dy))
     knight.ready = false
     coop_queue_warrant_knight_check(knight)
     mode.coop_auto_select_knight_pending = nil
@@ -2609,7 +2561,7 @@ function coop_resolve_knight_charge()
     if not is_coop_active() or mode.coop_floor_transition
         or charge.floor ~= mode.lvl or not knight
         or not knight.sq or knight.dead == true or (knight.hp and knight.hp <= 0) then
-        if _log then _log("[COOP CHARGE] cancelled before resolution") end
+        coop_log("[COOP CHARGE] cancelled before resolution")
         return
     end
     local landing = knight.sq
@@ -2626,13 +2578,11 @@ function coop_resolve_knight_charge()
         if not is_free(sq) then break end
         landing = sq
     end
-    if _log then
-        _log("[COOP CHARGE] resolving floor=" .. coop_string(mode.lvl)
-            .. " turn=" .. coop_string(mode.turns)
-            .. " from=" .. coop_trace_value(knight.sq)
-            .. " landing=" .. coop_trace_value(landing)
-            .. " enemy=" .. coop_trace_value(enemy))
-    end
+    coop_log("[COOP CHARGE] resolving floor=" .. coop_string(mode.lvl)
+        .. " turn=" .. coop_string(mode.turns)
+        .. " from=" .. coop_trace_value(knight.sq)
+        .. " landing=" .. coop_trace_value(landing)
+        .. " enemy=" .. coop_trace_value(enemy))
     if landing ~= knight.sq then move_piece(knight, landing) end
     if enemy and type(hit) == "function" then
         local enemy_was_white_king = coop_is_white_king(enemy)
@@ -2680,20 +2630,1855 @@ function coop_resolve_knight_charge()
             removed = removed + coop_prune_dead_attackers(gsq(px, py))
         end
     end
-    if _log then
-        _log("[COOP CHARGE] removed stale danger before opp_turn=" .. coop_string(removed))
-    end
+    coop_log("[COOP CHARGE] removed stale danger before opp_turn=" .. coop_string(removed))
     if has_card("Co-op High Cantle Saddle") then
         knight.coop_saddle_floor=mode.lvl;knight.coop_saddle_turn=(mode.turns or 0)+1
     end
     coop_queue_warrant_knight_check(knight)
-    if _log then
-        _log("[COOP CHARGE] resolved knight=" .. coop_trace_value(knight)
-            .. " enemy=" .. coop_trace_value(enemy))
-    end
+    coop_log("[COOP CHARGE] resolved knight=" .. coop_trace_value(knight)
+        .. " enemy=" .. coop_trace_value(enemy))
 end
 
 -- ==================== Initialize ====================
+-- Cursor/preview state shared by the input hooks. These used to be locals
+-- inside initialize(); keeping them at file scope makes the installers
+-- self-contained without changing hook order.
+-- Do not alter hero or square data for these previews. Restrict the native
+-- cursor renderers to a single pixel while Knight control is active.
+local coop_preview_clip_depth = 0
+local coop_preview_clip_calls = {}
+local coop_movemap_trace_count = 0
+local coop_movemap_exit_trace_count = 0
+local function coop_begin_preview_clip(kind)
+    local stack = coop_preview_clip_calls[kind]
+    if not stack then
+        stack = {}
+        coop_preview_clip_calls[kind] = stack
+    end
+    stack[#stack + 1] = false
+    if not mode or not is_coop_active() or mode.coop_selected ~= "knight"
+        or type(clip) ~= "function" then
+        return
+    end
+    stack[#stack] = true
+    if coop_preview_clip_depth == 0 then clip(0, 0, 1, 1) end
+    coop_preview_clip_depth = coop_preview_clip_depth + 1
+    if kind == "dr_movemap" and _log and coop_movemap_trace_count < 8 then
+        coop_movemap_trace_count = coop_movemap_trace_count + 1
+        _log("[COOP CURSOR TRACE] movemap enter floor=" .. coop_string(mode.lvl)
+            .. " turn=" .. coop_string(mode.turns)
+            .. " depth=" .. coop_string(coop_preview_clip_depth))
+    end
+    if _log and not mode["coop_logged_clip_" .. kind] then
+        mode["coop_logged_clip_" .. kind] = true
+        _log("[COOP CURSOR] clipped native " .. kind)
+    end
+end
+
+local function coop_end_preview_clip(kind)
+    local stack = coop_preview_clip_calls[kind]
+    if not stack or #stack == 0 then return end
+    local saved = stack[#stack]
+    stack[#stack] = nil
+    if not saved then return end
+    coop_preview_clip_depth = max(0, coop_preview_clip_depth - 1)
+    -- SUGAR clip() resets clipping to the full drawing area. The renderer
+    -- runs without a narrower clip here; do not assume clip() returns state.
+    if coop_preview_clip_depth == 0 then clip() end
+    if kind == "dr_movemap" and _log and coop_movemap_exit_trace_count < 8 then
+        coop_movemap_exit_trace_count = coop_movemap_exit_trace_count + 1
+        _log("[COOP CURSOR TRACE] movemap exit floor=" .. coop_string(mode and mode.lvl)
+            .. " turn=" .. coop_string(mode and mode.turns)
+            .. " depth=" .. coop_string(coop_preview_clip_depth))
+    end
+end
+
+local function coop_clip_preview_hook(kind)
+    prepend(kind, function()
+        coop_begin_preview_clip(kind)
+    end, "coop_clip_preview_before_" .. kind)
+    append(kind, function()
+        coop_end_preview_clip(kind)
+    end, "coop_clip_preview_after_" .. kind)
+end
+
+local function coop_on_knight_move_hints_after_game()
+    if not mode.coop_run_active or mode.coop_floor_transition then return end
+    coop_marshal_draw()
+    coop_draw_barricades()
+    coop_draw_mechanism_order_icon()
+    coop_draw_knight_move_hints(nil)
+    coop_draw_warrant_execution()
+    coop_draw_bounty_notice()
+    if is_coop_active() and not mode.coop_pause_menu_open then
+        local charge = mode.coop_knight_charge
+        if charge and charge.floor == mode.lvl
+            and charge.target_px and charge.target_py then
+            local board_left, board_top = coop_get_board_geometry()
+            local tx = board_left + charge.target_px * 16 + 8
+            local ty = board_top + charge.target_py * 16 + 8
+            -- Mark only the chosen square; the direction line stays hidden.
+            rectfill(tx-1, ty-5, tx+1, ty-4, 5)
+            rectfill(tx-1, ty+4, tx+1, ty+5, 5)
+            rectfill(tx-5, ty-1, tx-4, ty+1, 5)
+            rectfill(tx+4, ty-1, tx+5, ty+1, 5)
+            rectfill(tx-1, ty-1, tx+1, ty+1, 3)
+        end
+        for _, guard in ipairs(mode.coop_spent_soul_click_guards or {}) do
+            local soul = guard.soul
+            if soul and soul.id == nil
+                and type(soul.x) == "number" and type(soul.y) == "number" then
+                coop_draw_empty_soul_slot(soul)
+                if _log and not guard.empty_frame_logged then
+                    _log("[COOP SOUL] drew empty slot frame x="
+                        .. coop_string(soul.x) .. " y=" .. coop_string(soul.y))
+                    guard.empty_frame_logged = true
+                end
+            end
+        end
+    end
+    if is_coop_active() then
+        coop_draw_selected_soul_dissolve()
+        coop_draw_soul_vanish()
+    end
+end
+
+local function coop_on_stop_on_main_menu()
+    if mode and mode.id == "coop" then
+        mode.coop_duel = nil
+        mode.coop_run_active = false
+        mode.coop_opening_king_turn = false
+        mode.coop_auto_select_knight_pending = nil
+        mode.coop_select_king_pending = nil
+        mode.coop_cursor_refresh_pending = nil
+        mode.coop_surrender_input_locked = false
+        mode.coop_spent_soul_click_guard = nil
+        mode.coop_spent_soul_click_guards = {}
+        mode.coop_pending_soul_fill_slot = nil
+        -- The old board is about to be discarded. Do not write callbacks
+        -- back to its buttons while the native UI is being torn down.
+        mode.coop_knight_soul_hover_guards = {}
+        mode.coop_known_soul_slots = {}
+        mode.coop_knight_selected_soul = nil
+        mode.coop_knight_charge = nil
+        mode.coop_knight_soul_king_state = nil
+    end
+end
+
+local function coop_on_card_choice_trace(card)
+    if not mode or mode.id ~= "coop" then return end
+    local card_id = type(card) == "table" and (card.id or card.name or card.gid) or card
+    if card_id == "Grindstone" then
+        mode.coop_grindstone_turns = 0
+        mode.coop_grindstone_last_turn = nil
+    end
+    if card_id == "Co-op Warrant" then coop_assign_warrant_hunter() end
+    if card_id == "Co-op Cheval de Frise" then
+        mode.coop_barricades_pending = true
+    end
+    if card_id == "Co-op Bounty Cavalry"
+        or (card_id == "Co-op Warrant" and has_card
+            and has_card("Co-op Bounty Cavalry")) then
+        mode.coop_bounty_kills = 0
+    end
+    coop_log("[COOP CARD] added=" .. coop_string(card_id)
+        .. " floor=" .. coop_string(mode.lvl)
+        .. " turn=" .. coop_string(mode.turns))
+end
+
+local function coop_on_new_turn()
+    coop_resume_hidden_boss()
+    if mode and mode.id == "coop" then
+        mode.coop_native_turn_in_progress = false
+        mode.coop_duet_king_window = nil
+        if mode.coop_manual_king_enemy_turn_pending and _log then
+            _log("[COOP KING GHOST MOVE] native completion advanced turn="
+                .. coop_string(mode.coop_manual_king_enemy_turn_pending.turn)
+                .. "->" .. coop_string(mode.turns))
+        end
+        mode.coop_manual_king_enemy_turn_pending = nil
+        mode.coop_extra_king_action_pending = nil
+        mode.coop_locked_new_turn_origin = nil
+    end
+    if not is_coop_active() then return end
+    mode.coop_knight_killed_square = nil
+    mode.coop_knight_killed_squares = nil
+    mode.coop_knight_killed_attack_squares = nil
+    mode.coop_killed_button_refresh_pending = nil
+    -- A completed native turn consumes any pending pentagram bonus. The
+    -- pentagram path itself grants one more King action without calling
+    -- init_new_turn here.
+    mode.coop_penta_bonus_pending = nil
+    coop_log("[COOP TURN TRACE] init_new_turn returned floor="
+        .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns))
+    if coop_floor_is_ending() then
+        -- A surrender turn must not refresh the old board or grant the
+        -- Knight another action while the execution is still playing.
+        mode.coop_surrender_input_locked = true
+        mode.black_actions = 0
+        if mode.coop_knight then mode.coop_knight.ready = false end
+        mode.coop_auto_select_knight_pending = nil
+        if mode.coop_selected ~= "king" then coop_set_selected("king") end
+        if not mode.coop_floor_transition then coop_lock_surrender_controls() end
+        return
+    end
+    -- new_level can expose hero.sq to _update before the engine has built
+    -- its path-distance data. Spawn only once the first turn is initialized.
+    mode.coop_spawn_wait_for_turn = false
+    coop_refresh_knight_death()
+    coop_queue_phantom_turn()
+    -- Each turn builds a fresh native button map. Jump-square overrides
+    -- from the previous turn must not handle clicks on this board state.
+    mode.coop_last_knight_origin_sq = nil
+    mode.coop_last_knight_destination_sq = nil
+    mode.coop_knight_move_origin_sq = nil
+    if not mode.coop_knight and not mode.knight_ever_died then
+        spawn_coop_knight()
+    end
+    if mode.coop_opening_king_turn then
+        -- Each floor's first playable round belongs to the King. Keep its
+        -- native new_turn interception accounted for, so the King's
+        -- action advances the round instead of being suppressed.
+        mode.black_actions = 1
+        if mode.coop_knight then mode.coop_knight.ready = false end
+        mode.coop_auto_select_knight_pending = nil
+        if mode.coop_selected ~= "king" then coop_set_selected("king") end
+        mode.coop_king_move_input_locked = nil
+        coop_log("[COOP ROUND] opening round: King acts first")
+        coop_mute_king_button_on_knight_square()
+        return
+    end
+    mode.black_actions = 0
+    if mode.coop_knight then
+        local revived_this_turn = mode.coop_revive_locked_turn ~= nil
+            and mode.coop_revive_locked_turn == mode.turns
+        -- The revived Knight cannot act this round, so the King's move
+        -- must be counted as the second and final black action.
+        if revived_this_turn then mode.black_actions = 1 end
+        mode.coop_knight.ready = not revived_this_turn
+        mode.coop_knight.delay = 0
+        mode.coop_auto_select_knight_pending = not revived_this_turn
+        if mode.coop_auto_select_knight_pending then
+            mode.coop_king_move_input_locked = true
+        end
+        if not revived_this_turn then mode.coop_revive_locked_turn = nil end
+    else
+        mode.coop_auto_select_knight_pending = nil
+        if mode.coop_selected ~= "king" then coop_set_selected("king") end
+    end
+    coop_mute_king_button_on_knight_square()
+    if not mode.coop_auto_select_knight_pending then
+        mode.coop_king_move_input_locked = nil
+    end
+    if mode.coop_dead_knight_cursor_refresh_pending then
+        -- Rebuild the King's controls on the next frame, after native
+        -- enemy movement and init_new_turn have both returned.
+        mode.coop_dead_knight_cursor_refresh_pending = nil
+        mode.coop_cursor_refresh_pending = true
+    end
+end
+
+local function coop_install_core_hooks()
+
+    -- Like Karma, this card changes the King's built weapon stats. Rebuild
+    -- only when the King/Knight adjacency changes, never once per frame.
+    append("build_stack", function()
+        if not mode or mode.id ~= "coop" then return end
+        local state = coop_divisive_edict_state()
+        if type(stack) ~= "table" then
+            mode.coop_divisive_edict_applied_state = nil
+            return
+        end
+        if state == "adjacent" then
+            stack.spread = (stack.spread or 0) + 15
+        elseif state == "apart" then
+            stack.firepower = (stack.firepower or 0) - 1
+        end
+        mode.coop_divisive_edict_applied_state = state
+    end, "coop_divisive_edict_stack")
+
+    -- Controller fire has a separate input binding from mouse movement.
+    prepend("_update", function()
+        if coop_joust_blocks_shot() then btnclr("shoot", 0) end
+    end, "coop_joust_block_controller_shoot")
+
+    -- King movement can leave hero.ready=false even while King controls are
+    -- usable. Watch the input and the native refill entry without that flag.
+    -- The pending flag keeps the two paths from stacking the bonus.
+    prepend("_update", function()
+        if btnp("reload", 0) or btnp("coop_rally_space", 0) then
+            coop_try_rally_reload("reload input")
+        end
+    end, "coop_rally_manual_reload_start")
+    prepend("clean_up", function()
+        if mode and mode.id=="coop" and mode.coop_hidden_boss_pending then
+            mode.coop_hidden_boss_refilling=true
+        end
+        coop_depart_mixed_horsemen()
+    end, "coop_mixed_horsemen_depart")
+    prepend("ev_reveal_heir",function()
+        if mode and mode.id=="coop" and seek_role("heir") then
+            mode.coop_heir_reveal_floor=mode.lvl
+        end
+    end,"coop_heir_reveal_begin")
+    prepend("play",coop_resume_after_heir,"coop_heir_reveal_resume")
+    append("play", function()
+        if mode and mode.id=="coop" and mode.coop_hidden_boss_refilling
+            and playing and hero and not hero.win
+            and not (inter and inter.storming) then
+            coop_resume_hidden_boss()
+        end
+    end, "coop_hidden_boss_play_ready")
+    prepend("refill_ammo", function()
+        coop_try_rally_reload("native refill")
+    end, "coop_rally_native_refill")
+    -- The art is optional while it is being drawn. A pixel sword is drawn
+    -- below when this file has not yet been added to the mod directory.
+    mode.coop_weapon_sheet_loaded = false
+    mode.coop_weapon_sheet_name = nil
+    mode.coop_weapon_source_size = nil
+    mode.coop_weapon_anchor = nil
+    mode.coop_weapon_uses_key = false
+    mode.coop_weapon_pixels = nil
+    mode.coop_weapon_rotated_cache = nil
+    mode.coop_spear_sheet_loaded = false
+    mode.coop_spear_pixels = nil
+    mode.coop_spear_rotated_cache = nil
+    if type(file) == "function" and type(newsrf) == "function" then
+    -- This game's mod wrapper takes (surface_name, filename), unlike
+    -- the raw SUGAR manual's (filename, surface_name) overload.
+    if file("knight_weapon_hi.png") then
+        local loaded_name = newsrf("coop_knight_weapon_hi", "knight_weapon_hi.png")
+        if loaded_name ~= nil and loaded_name ~= false then
+            mode.coop_weapon_sheet_loaded = true
+            mode.coop_weapon_sheet_name = "coop_knight_weapon_hi"
+            mode.coop_weapon_source_size = 48
+            mode.coop_weapon_anchor = 23
+            mode.coop_weapon_uses_key = true
+        end
+    end
+    if not mode.coop_weapon_sheet_loaded and file("knight_weapon.png") then
+        local loaded_name = newsrf("coop_knight_weapon", "knight_weapon.png")
+        if loaded_name ~= nil and loaded_name ~= false then
+            mode.coop_weapon_sheet_loaded = true
+            mode.coop_weapon_sheet_name = "coop_knight_weapon"
+            mode.coop_weapon_source_size = 24
+            mode.coop_weapon_anchor = 11
+        end
+    end
+    if file("knight_spear_hi.png") then
+        local loaded_name = newsrf("coop_knight_spear_hi", "knight_spear_hi.png")
+        if loaded_name ~= nil and loaded_name ~= false then
+            mode.coop_spear_sheet_loaded = true
+        end
+    end
+    end
+    coop_log("[COOP ATTACK API] all_pieces=" .. type(all_pieces)
+    .. " pieces=" .. type(pieces)
+    .. " mode.pieces=" .. type(mode.pieces)
+    .. " get_pieces=" .. type(get_pieces)
+    .. " pcall=" .. type(pcall)
+    .. " hit=" .. type(hit))
+
+    prepend("xpl_boss",coop_book_snapshot,"coop_book_distance_snapshot")
+    prepend("dark_bishop_up",coop_book_capture_before,"coop_book_capture_before")
+    append("dark_bishop_up",coop_book_capture_after,"coop_book_capture_after")
+    append("init_safe_mode",coop_marshal_danger,"coop_marshal_native_folly")
+    append("init_safe_mode",coop_duel_danger,"coop_duel_native_folly")
+    -- Recheck at the action boundary as well: a delayed Knight hit or an
+    -- independent allied move may change blockers after control was restored.
+    -- This rebuild does not spend shields or advance turns. The original
+    -- check_folly_shields still owns charges, overrides and extra-turn safety.
+    prepend("check_folly_shields",coop_refresh_king_danger,"coop_fresh_folly_danger")
+    mode.coop_duel_draw_charge=coop_duel_draw_charge
+    -- Draw role-specific HUD after the board capture, so the host's Rebel
+    -- Knight label is not baked into the client's Revolutionary Knight view.
+    append("_draw",coop_duel_draw,"coop_duel_overlay")
+
+
+    -- Draw the weapon at the Knight's own draw call. The base piece is then
+    -- drawn over its grip, and the game's menus are drawn over both.
+    prepend("dr_piece", function(piece, x, y)
+        if not mode.coop_floor_transition
+            and piece == mode.coop_knight and type(x) == "number"
+            and type(y) == "number" then
+            coop_draw_knight_weapon(x + 8, y + 8)
+        end
+    end, "coop_knight_weapon_behind_piece")
+
+    -- A charge target may contain a piece. Draw that square's corner marks
+    -- just before its piece, so the sprite stays above the movement hint.
+    prepend("dr_piece", function(piece)
+        if not mode.coop_floor_transition and piece and piece.sq then
+            coop_draw_knight_move_hints(piece)
+        end
+    end, "coop_knight_occupied_hints_behind_piece")
+
+    -- draw_inter runs before the board in this build, so board squares cover
+    -- marks placed there. Draw Knight destinations after the game scene.
+    append("draw_game", coop_on_knight_move_hints_after_game, "coop_knight_move_hints_after_game")
+
+    -- The Knight's board-click handler clears mouse input for destinations on
+    -- the board. The pause menu can overlap that area, so leave all input to
+    -- the native UI while a menu is open. Track the menu through the engine's
+    -- exposed lifecycle functions; these hooks only update our local flag.
+    prepend("open_menu", function()
+        if mode and mode.id == "coop" then
+            mode.coop_pause_menu_open = true
+            mode.coop_menu_click_grace = 2
+            coop_log("[COOP UI] menu opened")
+        end
+    end, "coop_menu_open_state")
+    prepend("init_menu", coop_on_stop_on_main_menu, "coop_stop_on_main_menu")
+    prepend("close_menu", function()
+        if mode and mode.id == "coop" then
+            -- This callback can run during menu input dispatch, before the
+            -- selected menu action has completed. Leave the open state alone;
+            -- Escape/resume/unpause owns the actual transition.
+            mode.coop_menu_click_grace = 2
+            coop_log("[COOP UI] menu closed")
+        end
+    end, "coop_menu_close_state")
+    prepend("unpause", function()
+        if mode and mode.id == "coop" then
+            mode.coop_pause_menu_open = false
+            mode.coop_menu_click_grace = 2
+            coop_log("[COOP UI] unpaused")
+        end
+    end, "coop_menu_unpause_state")
+    prepend("resume", function()
+        if mode and mode.id == "coop" then
+            mode.coop_pause_menu_open = false
+            mode.coop_menu_click_grace = 2
+            coop_log("[COOP UI] resumed")
+        end
+    end, "coop_menu_resume_state")
+
+    mode.ranks_index = ranks and mid(0, bget(0,4), #ranks-1) or nil
+    mode.weapons_index = weapons and mid(0, bget(1,4), #weapons-1) or nil
+
+    append("add_card", coop_on_card_choice_trace, "coop_card_choice_trace")
+
+    -- Add earned reinforcements before the native turn builds white actions.
+    prepend("init_new_turn", coop_spawn_bounty_reinforcement,
+    "coop_bounty_reinforcement_before_turn")
+    prepend("init_new_turn", coop_spawn_revival_bishops,
+    "coop_revival_bishops_before_turn")
+    prepend("init_new_turn", coop_spawn_pending_phantoms,
+    "coop_phantoms_before_turn")
+
+    prepend("init_new_turn", function()
+        if is_coop_active() and _log then
+            _log("[COOP TURN TRACE] init_new_turn enter floor="
+                .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns)
+                .. " selected=" .. coop_string(mode.coop_selected))
+        end
+        if mode and mode.id == "coop" then
+            mode.coop_native_turn_in_progress = true
+        end
+    end, "coop_init_new_turn_enter_trace")
+
+    -- new_turn
+    append("init_new_turn", coop_on_new_turn, "coop_new_turn")
+
+end
+
+local function coop_on_new_level()
+    if not mode or mode.id ~= "coop" then return end
+    mode.coop_heir_reveal_floor=nil
+    if mode.coop_surrender_input_locked and hero then hero.ready = true end
+    mode.knight_spawned = false
+    -- The board is being replaced. Drop the old entity reference while
+    -- keeping `knight_ever_died` so a dead 2P does not return automatically.
+    mode.coop_knight = nil
+    mode.coop_selected = "king"
+    mode.coop_duet_king_window = nil
+    mode.coop_king_hero = nil
+    mode.coop_select_king_pending = nil
+    mode.coop_auto_select_knight_pending = nil
+    mode.coop_white_move_grace_frames = 0
+    mode.coop_white_move_tracking = nil
+    mode.coop_barricades = {}
+    mode.coop_barricade_squares = {}
+    mode.coop_barricade_floor = nil
+    mode.coop_barricades_pending = has_card
+        and has_card("Co-op Cheval de Frise") or false
+    mode.coop_auto_select_wait_logged = nil
+    mode.coop_force_king_kill_turn = nil
+    mode.coop_surrender_input_locked = false
+    mode.coop_revive_locked_turn = nil
+    mode.coop_knight_move_origin_sq = nil
+    mode.coop_last_knight_origin_sq = nil
+    mode.coop_last_knight_destination_sq = nil
+    mode.coop_knight_killed_square = nil
+    mode.coop_knight_killed_squares = nil
+    mode.coop_knight_killed_attack_squares = nil
+    mode.coop_killed_button_refresh_pending = nil
+    mode.coop_manual_king_turn_pending = nil
+    mode.coop_manual_king_turn_frames = nil
+    mode.coop_manual_king_origin_sq = nil
+    mode.coop_manual_king_enemy_turn_pending = nil
+    mode.coop_extra_king_action_pending = nil
+    mode.coop_penta_move_target = nil
+    mode.coop_penta_bonus_pending = nil
+    mode.coop_pickup_cleanup_pending = nil
+    mode.coop_spawning = false
+    mode.coop_floor_transition = false
+    mode.coop_spawn_wait_for_turn = true
+    mode.coop_knight_seen_on_board = false
+    mode.coop_knight_missing_frames = 0
+    mode.coop_soul_revival_pending = false
+    mode.coop_soul_refund_watch = false
+    mode.coop_soul_revival_descriptor = nil
+    -- Grindstone's delayed blade bonus starts over on each floor.
+    mode.coop_grindstone_turns = 0
+    mode.coop_grindstone_bonus = 0
+    mode.coop_grindstone_last_turn = nil
+    mode.coop_rally_pending = false
+    mode.coop_ritual_dagger_pending = false
+    mode.coop_ritual_dagger_target = nil
+    mode.coop_redemption_native_knight = nil
+    mode.coop_redemption_native_knight_type = nil
+    coop_reset_phantom_state()
+    mode.coop_divisive_edict_applied_state = nil
+    mode.coop_warrant_hunter = nil
+    mode.coop_warrant_assigned_floor = nil
+    mode.coop_warrant_check_pending = nil
+    mode.coop_warrant_execution_fx = nil
+    -- Bounty progress and unspawned rewards belong to the finished floor.
+    mode.coop_bounty_kills = 0
+    mode.coop_bounty_pending = {}
+    mode.coop_bounty_notice = nil
+    mode.coop_royal_vigil_pending = 0
+    mode.coop_revival_bishops_pending = 0
+    -- Soul descriptors and even their button objects can survive a floor
+    -- change. Keep callback functions but drop references to the old UI;
+    -- restoration finds the live button when the slot is refilled.
+    mode.coop_spent_soul_click_guards = mode.coop_spent_soul_click_guards or {}
+    for _, guard in ipairs(mode.coop_spent_soul_click_guards) do
+        guard.buttons = {}
+    end
+    mode.coop_spent_soul_click_guard = mode.coop_spent_soul_click_guards[#mode.coop_spent_soul_click_guards]
+    mode.coop_native_turn_in_progress = false
+    mode.coop_king_move_input_locked = nil
+    mode.coop_extra_king_action_pending = nil
+    mode.coop_locked_new_turn_origin = nil
+    mode.coop_dead_knight_cursor_refresh_pending = nil
+    mode.coop_pending_soul_fill_slot = nil
+    -- The previous floor's button objects are being retired. Restoring
+    -- callbacks on them here can touch a stale native UI tree.
+    mode.coop_knight_soul_hover_guards = {}
+    mode.coop_knight_selected_soul = nil
+    mode.coop_knight_move_soul_to_spend = nil
+    mode.coop_knight_charge = nil
+    mode.coop_knight_soul_king_state = nil
+    mode.coop_soul_refund_origin_px = nil
+    mode.coop_soul_refund_origin_py = nil
+    mode.coop_force_clear_hero_soul = false
+    mode.coop_hero_soul_cleanup = nil
+    mode.coop_hero_c_soul_cleanup = nil
+    mode.coop_hero_behavior_cleanup = nil
+    mode.coop_block_knight_soul_range = false
+    mode.coop_soul_range_block_turn = nil
+    mode.coop_hero_soul_before = nil
+    mode.coop_hero_c_soul_before = nil
+    mode.coop_hero_behavior_before = nil
+    mode.coop_hero_sq_before = nil
+    mode.coop_hero_px_before = nil
+    mode.coop_hero_py_before = nil
+    coop_log_knight_state("new_level:after_reset")
+end
+
+local function coop_on_no_white_king_move(piece, destination, ...)
+    if is_coop_active() and piece and piece.team == 1 and _log then
+        _log("[COOP WHITE MOVE] enter type=" .. coop_string(piece.type)
+            .. " from=" .. coop_trace_value(piece.sq)
+            .. " to=" .. coop_trace_value(destination)
+            .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq)
+            .. " source_occupant=" .. coop_trace_value(piece.sq and piece.sq.p)
+            .. " target_occupant=" .. coop_trace_value(destination and destination.p)
+            .. " source_is_piece=" .. coop_string(piece.sq and piece.sq.p == piece)
+            .. " target_is_board_sq=" .. coop_string(destination and destination.px ~= nil
+                and destination.py ~= nil))
+    end
+    if is_coop_active() and piece == hero and _log then
+        _log("[COOP KING PIECE MOVE] enter destination=" .. coop_trace_value(destination)
+            .. " origin=" .. coop_trace_value(hero.sq))
+    end
+    if mode and mode.id == "coop" and piece == mode.coop_knight
+        and destination and destination.piece then
+        coop_log("[COOP GUARD] rejected Knight move onto occupied square="
+            .. coop_trace_value(destination)
+            .. " occupant=" .. coop_trace_value(destination.piece))
+        return true
+    end
+    if mode and mode.id == "coop" and coop_call_targets_white_king(piece, destination, ...) then
+        return true
+    end
+    if mode and mode.id == "coop" and piece and piece.team == 1
+        and mode.coop_knight and destination == mode.coop_knight.sq then
+        -- Remember the victim before the native capture clears its square.
+        mode.coop_knight_capture_square = destination
+    end
+end
+
+local function coop_on_knight_validate_native_move(destination)
+    if is_coop_active() and mode.coop_selected == "king"
+        and destination and not coop_piece_on_square(destination) then
+        mode.coop_duet_king_window = nil
+    end
+    if is_coop_active() and mode.coop_selected == "king" and _log then
+        _log("[COOP KING MOVE] enter destination=" .. coop_trace_value(destination)
+            .. " origin=" .. coop_trace_value(hero and hero.sq)
+            .. " penta=" .. coop_string(destination and destination.penta)
+            .. " pentagram=" .. coop_string(destination and destination.pentagram)
+            .. " extra_turn=" .. coop_string(mode.extra_turn)
+            .. " turn=" .. coop_string(mode.turns)
+            .. " black_actions=" .. coop_string(mode.black_actions))
+    end
+    if is_coop_active() and mode.coop_selected == "king" then
+        mode.coop_penta_move_target = destination and destination.penta == true
+            and destination or nil
+    end
+    if not mode or mode.id ~= "coop" or mode.coop_selected ~= "knight"
+        or not mode.coop_knight then return end
+    local knight = mode.coop_knight
+    for _, sq in ipairs(coop_get_knight_move_targets(knight)) do
+        if sq == destination and knight.ready ~= false then
+            mode.coop_knight_move_origin_sq = knight.sq
+            return
+        end
+    end
+    coop_log("[COOP INPUT] blocked non-move Knight target=" .. coop_trace_value(destination))
+    return true
+end
+
+local function coop_on_knight_finish_native_move(destination)
+    if is_coop_active() and mode.coop_selected == "king" then
+        if destination and hero.sq == destination then
+            coop_break_king_barricade()
+        end
+        mode.coop_penta_bonus_pending = mode.coop_penta_move_target == destination
+            and hero.sq == destination
+        mode.coop_penta_move_target = nil
+        -- The native movement button can accept another click while the
+        -- enemy phase and next-turn UI are still being assembled.
+        if destination and hero.sq == destination then
+            mode.coop_king_move_input_locked = true
+            mode.coop_extra_king_action_pending = nil
+            mode.coop_king_post_move_idle_frames = 0
+        end
+    end
+    if is_coop_active() and mode.coop_selected == "king" and _log then
+        _log("[COOP KING MOVE] returned destination=" .. coop_trace_value(destination)
+            .. " current=" .. coop_trace_value(hero and hero.sq)
+            .. " turn=" .. coop_string(mode.turns)
+            .. " black_actions=" .. coop_string(mode.black_actions))
+    end
+    if not mode or mode.id ~= "coop" or mode.coop_selected ~= "knight"
+        or not mode.coop_knight then return end
+    local knight = mode.coop_knight
+    local origin = mode.coop_knight_move_origin_sq
+    if origin and knight.sq ~= origin and knight.sq == destination then
+        coop_finish_knight_move(knight, destination)
+    end
+end
+
+local function coop_on_move_piece_after(piece, destination)
+    if not is_coop_active() then return end
+    if piece and piece.team == 1 then
+        -- Native move_piece updates sq before the white piece finishes
+        -- tweening on screen. Track the actual movement when the engine
+        -- exposes in_move; the frame limit remains a fallback.
+        mode.coop_white_move_grace_frames = 30
+        mode.coop_white_move_tracking = mode.coop_white_move_tracking or {}
+        mode.coop_white_move_tracking[#mode.coop_white_move_tracking + 1] = {
+            piece = piece, seen_in_move = not not piece.in_move,
+        }
+    end
+    if piece and piece.team == 1 and _log then
+        _log("[COOP WHITE MOVE] returned type=" .. coop_string(piece.type)
+            .. " current=" .. coop_trace_value(piece.sq)
+            .. " destination=" .. coop_trace_value(destination)
+            .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq))
+    end
+    if piece == hero and _log then
+        _log("[COOP KING PIECE MOVE] returned destination=" .. coop_trace_value(destination)
+            .. " current=" .. coop_trace_value(hero.sq))
+    end
+    local knight = mode.coop_knight
+    if piece and piece.team == 1 and knight and destination
+        and (destination == knight.sq or destination == mode.coop_knight_capture_square) then
+        coop_log("[COOP GUARD] enemy captured Knight on " .. coop_trace_value(destination))
+        coop_mark_knight_dead(knight)
+    end
+    mode.coop_knight_capture_square = nil
+    if piece == mode.coop_knight then
+        if destination and destination.piece and destination.piece ~= piece then
+            coop_log("[COOP GUARD] Knight move ended on occupied square="
+                .. coop_trace_value(destination)
+                .. " occupant=" .. coop_trace_value(destination.piece))
+            coop_mark_knight_dead(piece)
+        end
+    elseif piece ~= hero and piece ~= mode.coop_king_hero then
+        return
+    end
+    if piece == knight and mode.coop_selected == "knight"
+        and destination == knight.sq then
+        if coop_finish_knight_move(knight, destination) and _log then
+            _log("[COOP INPUT] native Knight move committed; selected=king")
+        end
+    end
+end
+
+local function coop_install_floor_hooks()
+    -- new_level
+    prepend("new_level", function(...)
+        if mode and mode.id == "coop" then
+            coop_log_knight_state("new_level:before")
+            -- The engine clears a living piece's sq reference while preparing
+            -- the next board. A dead custom knight can retain its old square
+            -- reference even though that square no longer contains it. Detect
+            -- that transition before the append hook drops the old instance.
+            local knight = mode.coop_knight
+            if mode.coop_floor_transition and knight and knight.sq
+                and not coop_is_knight(knight.sq.piece) then
+                coop_log("[COOP] stale knight square at floor transition; recording death")
+                coop_mark_knight_dead(knight)
+            end
+        end
+    end, "coop_record_knight_before_new_level")
+
+    append("new_level", coop_on_new_level, "coop_new_level")
+
+    -- Block king captures at the engine's target-validation point. The range
+    -- filter in script.lua remains as an additional guard for displayed moves.
+    prepend("is_valid_target", function(...)
+        if mode and mode.id == "coop" and mode.coop_knight and coop_call_targets_white_king(...) then
+            return false
+        end
+    end, "coop_no_white_king_target")
+
+    -- Log unexpected native moves. A prepend callback cannot cancel the
+    -- original move_piece call, so occupancy is enforced in the manual input
+    -- path and by keeping this piece's native target lists empty.
+    prepend("move_piece", coop_on_no_white_king_move, "coop_no_white_king_move")
+
+    -- A white King move has occasionally failed inside the native move
+    -- wrapper. Mark whether it reached the lower-level square transition.
+    prepend("goto_sq", function(piece, destination)
+        if is_coop_active() and coop_is_white_king(piece) and _log then
+            _log("[COOP WHITE GOTO] enter from=" .. coop_trace_value(piece.sq)
+                .. " to=" .. coop_trace_value(destination)
+                .. " source_occupant=" .. coop_trace_value(piece.sq and piece.sq.p)
+                .. " target_occupant=" .. coop_trace_value(destination and destination.p))
+        end
+    end, "coop_white_king_goto_trace_enter")
+
+    append("goto_sq", function(piece, destination)
+        if is_coop_active() and coop_is_white_king(piece) and _log then
+            _log("[COOP WHITE GOTO] returned current=" .. coop_trace_value(piece.sq)
+                .. " target=" .. coop_trace_value(destination))
+        end
+    end, "coop_white_king_goto_trace_return")
+
+    -- Guard explicit move_hero calls. Board clicks are validated and consumed
+    -- in the _update hook below because a prepend return value cannot cancel
+    -- the game's original input handler.
+    prepend("move_hero", coop_on_knight_validate_native_move, "coop_knight_validate_native_move")
+
+    append("move_hero", coop_on_knight_finish_native_move, "coop_knight_finish_native_move")
+
+    append("move_piece", coop_on_move_piece_after, "coop_move_piece_after")
+
+end
+
+local function coop_on_new_turn_intercept()
+    if not mode or mode.id ~= "coop" then return end
+    -- The coop interceptor can skip the first native new_turn call. The
+    -- base mode normally initializes ai_lvl there, but during a floor
+    -- transition the king may not have a square yet. Seed it before the
+    -- native new_turn arithmetic even in that short inactive window.
+    if mode.ai_lvl == nil then mode.ai_lvl = mode.lvl or 0 end
+    if not is_coop_active() then return end
+    if mode.coop_king_move_input_locked and mode.coop_selected == "king" then
+        mode.coop_locked_new_turn_origin = mode.turns
+    else
+        mode.coop_locked_new_turn_origin = nil
+    end
+    coop_log("[COOP ROUND PROBE] new_turn before knight="
+        .. coop_string(mode.coop_knight ~= nil)
+        .. " selected=" .. coop_string(mode.coop_selected)
+        .. " turns=" .. coop_string(mode.turns)
+        .. " black_actions=" .. coop_string(mode.black_actions))
+    if coop_floor_is_ending() then
+        -- The Knight's blade does not use the King's action controller.
+        -- Keep allowing native turns until on_empty completes the floor.
+        -- Clearing this after one call made each later surrender turn
+        -- look like a fresh 2P action and repeatedly suppressed it.
+        mode.coop_surrender_input_locked = true
+        mode.black_actions = 0
+        return
+    end
+    if mode.coop_opening_king_turn and mode.black_actions == 1 then
+        mode.coop_opening_king_turn = false
+        mode.black_actions = mode.coop_penta_bonus_pending and 1 or 0
+        mode.coop_penta_bonus_pending = nil
+        coop_log("[COOP ROUND] opening King action advances native turn")
+        return
+    end
+    if not mode.coop_knight then
+        coop_log("[COOP ROUND PROBE] new_turn allow reason=no_knight")
+        return
+    end
+
+    mode.black_actions = mode.black_actions + 1
+    if mode.black_actions == 1 then
+        coop_log("[COOP ROUND PROBE] new_turn suppress native advance")
+        return true
+    else
+        coop_log("[COOP ROUND PROBE] new_turn allow native advance")
+        if mode.coop_penta_bonus_pending then
+            -- The original game skips the white phase and keeps the King
+            -- active after a pentagram move. Its extra King action must
+            -- still finish this shared round on the next new_turn call.
+            mode.black_actions = 1
+            coop_log("[COOP ROUND] pentagram granted extra King action")
+        else
+            mode.black_actions = 0
+        end
+        mode.coop_penta_bonus_pending = nil
+    end
+end
+
+local function coop_on_new_turn_return_trace()
+    if is_coop_active() and mode.coop_king_move_input_locked
+        and mode.coop_selected == "king"
+        and not mode.coop_native_turn_in_progress
+        and mode.coop_locked_new_turn_origin == mode.turns
+        and not coop_floor_is_ending() then
+        -- Native bonus actions (including Undercover Mission) return
+        -- from new_turn without init_new_turn. The normal turn-start
+        -- callback therefore cannot release the rapid-click guard.
+        mode.coop_extra_king_action_pending = 2
+        -- The Knight and King's regular actions are already complete.
+        -- Count the bonus King action as the final action on its next
+        -- new_turn call, as the pentagram path does.
+        mode.black_actions = 1
+        coop_log("[COOP ROUND] native same-turn King bonus; release click lock when settled")
+    end
+    if mode and mode.id == "coop" then mode.coop_locked_new_turn_origin = nil end
+    if is_coop_active() and _log then
+        _log("[COOP ROUND PROBE] new_turn returned floor=" .. coop_string(mode.lvl)
+            .. " turn=" .. coop_string(mode.turns)
+            .. " events=" .. coop_string(type(events) == "table" and #events or nil))
+    end
+end
+
+local function coop_install_turn_hooks()
+    -- Resolve the charge before opp_turn snapshots attackers and queues their
+    -- callbacks. opp_move is later: pruning danger there cannot cancel an
+    -- attack that opp_turn has already scheduled against the King.
+    prepend("opp_turn", function()
+        if not is_coop_active() then return end
+        if mode.coop_selected == "knight" then coop_set_selected("king") end
+        if mode.coop_knight_charge and _log then
+            _log("[COOP CHARGE] resolve before native enemy attack scheduling")
+        end
+        coop_resolve_knight_charge()
+    end, "coop_charge_before_enemy_attacks")
+
+    -- The engine's enemy turn assumes `hero` is the real King. Restore it
+    -- before enemy targeting/damage code runs, even if the Knight was selected
+    -- but did not finish an action before the phase advanced.
+    prepend("opp_move", function()
+        if mode and mode.id == "coop" then mode.coop_duet_king_window = nil end
+        if is_coop_active() and _log then
+            _log("[COOP WHITE PHASE] enter floor=" .. coop_string(mode.lvl)
+                .. " turn=" .. coop_string(mode.turns)
+                .. " events=" .. coop_string(type(events) == "table" and #events or nil)
+                .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq))
+        end
+        -- Resolve the warrant only when the King's action ends the shared
+        -- round, alongside the enemy damage phase, never on the Knight click.
+        if mode and mode.id == "coop" then coop_resolve_warrant_knight_check() end
+        if mode and mode.id == "coop" then coop_finish_grindstone_turn() end
+        if mode and mode.id == "coop" and mode.coop_selected == "knight" then
+            coop_set_selected("king")
+            coop_log("[COOP INPUT] restored King before enemy phase")
+        end
+    end, "coop_restore_king_before_enemy_phase")
+
+    append("opp_move", function()
+        if is_coop_active() and _log then
+            _log("[COOP WHITE PHASE] returned floor=" .. coop_string(mode.lvl)
+                .. " turn=" .. coop_string(mode.turns)
+                .. " events=" .. coop_string(type(events) == "table" and #events or nil))
+        end
+    end, "coop_white_phase_return_trace")
+
+    -- Two-action turn gate: one native turn carries King and Knight actions
+    prepend("new_turn", coop_on_new_turn_intercept, "coop_new_turn_intercept")
+
+    append("new_turn", coop_on_new_turn_return_trace, "coop_new_turn_return_trace")
+
+    -- The base game hides the OS pointer from draw_game() every frame. Keep it
+    -- visible while 2P is selected; this does not touch the game's own aim UI.
+    append("mouse", function(command, enabled)
+        if not is_coop_active() or mode.coop_selected ~= "knight"
+            or mode.coop_pause_menu_open or (mode.coop_menu_click_grace or 0) > 0
+            or command ~= "show" or enabled ~= false or mode.coop_force_os_cursor then
+            return
+        end
+        mode.coop_force_os_cursor = true
+        mouse("show", true)
+        mode.coop_force_os_cursor = false
+    end, "coop_knight_show_os_cursor")
+
+end
+
+-- The native movement arrow follows the mouse over an empty King move
+-- square. Preserve native coordinates over other occupied squares so the
+-- game's normal piece details panel can still respond to hover in Knight
+-- mode. The co-op Knight itself must not get a native pickup/status hover.
+-- Soul hover must also be handled by the Knight preview: its native hover
+-- callback calculates the King's soul range. Knight controls use separate
+-- m:x/m:y bindings below. Menus retain native coordinates.
+local function coop_update_knight_input()
+    if not is_coop_active() then return end
+    if not mode.coop_pause_menu_open and btnp("coop_mouse_probe", 0) then
+        local mx = btnv("coop_mouse_x_probe", 0)
+        local my = btnv("coop_mouse_y_probe", 0)
+        if coop_mechanism_icon_at(mx, my)
+            and has_card and has_card("Co-op Mechanism Order") then
+            btnclr()
+            coop_activate_mechanism_order()
+            return true
+        end
+    end
+    if mode.coop_selected == "king" and hero and hero.sq
+        and mode.coop_knight_killed_attack_squares
+        and mode.coop_knight_killed_attack_squares[hero.sq] then
+        -- Shooting may still see cached danger from the killed piece
+        -- until the next white turn. Keep all living attackers intact.
+        local removed = coop_prune_dead_attackers(hero.sq)
+        if removed > 0 and _log then
+            _log("[COOP KILL UI] pruned dead danger before King input="
+                .. coop_string(removed))
+        end
+    end
+    if coop_floor_is_ending() then
+        -- The board can remain clickable during surrender and after
+        -- on_empty. Never dispatch a Knight action into that old board.
+        if not mode.coop_floor_transition then
+            mode.coop_surrender_input_locked = true
+            coop_lock_surrender_controls()
+        end
+        return
+    end
+    -- Undercover Mission pauses after the King lands and waits for a
+    -- disruption choice. Its choices are drawn over the board but are not
+    -- all regular buttons, so the post-move board guard must eventually
+    -- pass their clicks to the native selector. Ordinary move animations
+    -- and queued events keep the guard active.
+    local waiting_for_disruption_choice = mode.coop_king_move_input_locked
+        and mode.coop_selected == "king"
+        and not mode.coop_manual_king_enemy_turn_pending
+        and type(has_card) == "function" and has_card("Undercover Mission")
+        and not (hero and hero.in_move)
+        and not mode.coop_native_turn_in_progress
+        and not mode.coop_auto_select_knight_pending
+        and not mode.coop_penta_bonus_pending
+        and not mode.coop_extra_king_action_pending
+        and not mode.coop_pause_menu_open
+        and (type(events) ~= "table" or #events == 0)
+    if waiting_for_disruption_choice then
+        mode.coop_king_post_move_idle_frames =
+            (mode.coop_king_post_move_idle_frames or 0) + 1
+    else
+        mode.coop_king_post_move_idle_frames = 0
+    end
+    coop_sync_knight_soul_hover()
+    if coop_white_move_animation_pending()
+        and (mode.coop_auto_select_knight_pending
+            or mode.coop_selected == "knight")
+        and btnp("coop_mouse_probe", 0) then
+        local mx = btnv("coop_mouse_x_probe", 0)
+        local my = btnv("coop_mouse_y_probe", 0)
+        if coop_get_square_at_mouse(mx, my) then
+            btnclr()
+            return true
+        end
+    end
+    if mode.coop_selected == "knight" and mode.coop_knight
+        and not mode.coop_pause_menu_open
+        and (mode.coop_menu_click_grace or 0) <= 0 then
+        local mouse_x = btnv("coop_mouse_x_probe", 0)
+        local mouse_y = btnv("coop_mouse_y_probe", 0)
+        local hover_square = coop_get_square_at_mouse(mouse_x, mouse_y)
+        if not (hover_square and hover_square ~= mode.coop_knight.sq
+            and coop_piece_on_square(hover_square)) then
+            btnclr("mx", 0)
+            btnclr("my", 0)
+        end
+    end
+    -- Knight cancellation owns this press. A prepend return value does
+    -- not stop native input: consume it before Scope/other King skills
+    -- can see the same right-click. btnclr also blocks held bindings
+    -- until release, including a press held across a character switch.
+    if mode.coop_selected == "knight" and mode.coop_knight
+        and not mode.coop_pause_menu_open
+        and (mode.coop_menu_click_grace or 0) <= 0
+        and btnp("coop_right_probe", 0) then
+        coop_cancel_knight_soul()
+        btnclr()
+        return true
+    end
+    if not btnp("coop_mouse_probe", 0) then return end
+    -- Menu state is set by the native open/resume callbacks above. The
+    -- old pause-key toggle drifted while Escape was held and could swallow
+    -- the next Knight click after the native menu had already closed.
+    local menu_click_grace = (mode.coop_menu_click_grace or 0) > 0
+    if mode.coop_pause_menu_open or menu_click_grace then
+        coop_log("[COOP UI] click passed to native menu flag="
+            .. coop_string(mode.coop_pause_menu_open)
+            .. " grace=" .. coop_string(mode.coop_menu_click_grace))
+        mode.coop_menu_click_grace = 0
+        return
+    end
+    if coop_controller and not coop_controller.owns_input() then btnclr(); return end
+    local click_x = btnv("coop_mouse_x_probe", 0)
+    local click_y = btnv("coop_mouse_y_probe", 0)
+    -- Native disruption options cover the board; their clicks belong to
+    -- the modal even while the King's movement continuation is suspended.
+    if disrupt_menu then return end
+    if coop_controller and coop_controller.native_choice_waiting
+        and coop_controller.native_choice_waiting() then return end
+    if waiting_for_disruption_choice
+        and mode.coop_king_post_move_idle_frames >= 15 then
+        coop_log("[COOP UI] passed waiting disruption choice click")
+        return
+    end
+    if mode.coop_selected == "king"
+        and mode.coop_king_move_input_locked
+        and coop_native_menu_button_at(click_x, click_y) then
+        coop_log("[COOP UI] passed native choice button click")
+        return
+    end
+    if mode.coop_king_move_input_locked
+        and coop_get_square_at_mouse(click_x, click_y) then
+        btnclr()
+        coop_log("[COOP INPUT] blocked King click during turn transition"
+            .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
+            .. " moving=" .. coop_string(hero and hero.in_move)
+            .. " events=" .. coop_string(type(events) == "table" and #events or nil))
+        return true
+    end
+    if mode.coop_selected == "king" and mode.coop_knight_killed_square then
+        local clicked = coop_get_square_at_mouse(click_x, click_y)
+        local killed_square = clicked and mode.coop_knight_killed_squares
+            and mode.coop_knight_killed_squares[clicked]
+        local affected = clicked and (killed_square
+            or (mode.coop_knight_killed_attack_squares
+                and mode.coop_knight_killed_attack_squares[clicked]))
+        local legal_move = killed_square
+            and coop_king_can_enter_killed_square(clicked)
+            or (clicked and is_free(clicked)
+                and not coop_piece_on_square(clicked)
+                and coop_king_destination_in_range(clicked))
+        if affected and legal_move then
+            local live_attack = coop_live_white_attacks_square(clicked)
+            if killed_square or not live_attack then
+                -- Native buttons may still use the victim's pre-kill map.
+                -- Submit this legal King move once, checking refreshed
+                -- native danger (including projectiles and special attacks).
+                btnclr()
+                if type(check_folly_shields) == "function"
+                    and check_folly_shields(clicked) then
+                    coop_log("[COOP KILL UI] live attack blocked King move")
+                    return true
+                end
+                mode.coop_manual_king_origin_sq = hero.sq
+                mode.coop_manual_king_turn_pending = clicked
+                mode.coop_manual_king_turn_frames = 60
+                coop_log("[COOP KILL UI] King move through stale target="
+                    .. coop_trace_value(clicked)
+                    .. " live_attack=" .. coop_string(live_attack))
+                move_hero(clicked)
+                return true
+            end
+        end
+        if killed_square and _log then
+            _log("[COOP KILL UI] dead square click rejected legal="
+                .. coop_string(legal_move)
+                .. " free=" .. coop_string(is_free(clicked))
+                .. " piece=" .. coop_trace_value(coop_piece_on_square(clicked)))
+        end
+    end
+    coop_refresh_spent_souls()
+    if mode.coop_selected == "king" then
+        coop_note_ritual_dagger_click(click_x, click_y)
+    end
+    if coop_joust_blocks_shot() then
+        local clicked_square = coop_get_square_at_mouse(click_x, click_y)
+        if clicked_square and not coop_joust_allows_king_action(clicked_square) then
+            btnclr()
+            coop_log("[COOP JOUST] blocked King shot at "
+                .. coop_trace_value(clicked_square))
+            return true
+        end
+    end
+    if mode.coop_selected == "king" and mode.coop_knight
+        and mode.coop_knight.sq
+        and coop_get_square_at_mouse(click_x, click_y) == mode.coop_knight.sq then
+        -- The King's native range can still contain a square occupied by
+        -- a Knight revived after that range was calculated.
+        btnclr()
+        coop_log("[COOP GUARD] King move onto Knight square blocked")
+        return true
+    end
+    if mode.coop_selected == "king" and mode.coop_knight
+        -- activate_soul creates fresh native buttons, including the
+        -- vacated square. Preserve their range, shield and landing callback.
+        and not (hero and hero.soul ~= nil)
+        and mode.coop_last_knight_origin_sq
+        and mode.coop_last_knight_destination_sq then
+        local clicked_square = coop_get_square_at_mouse(click_x, click_y)
+        local old_square = mode.coop_last_knight_origin_sq
+        local new_square = mode.coop_last_knight_destination_sq
+        if clicked_square == old_square or clicked_square == new_square then
+            -- The native click buttons still point at the Knight's old
+            -- square after its independent jump. Use the current board
+            -- state for these two squares instead of that stale button.
+            btnclr()
+            local legal_king_move = false
+            local range_length = nil
+            local range_preview = {}
+            if clicked_square == old_square and hero and hero.sq
+                and is_free(old_square) and get_range then
+                local range = get_range(hero)
+                if type(range) == "table" then
+                    range_length = #range
+                    for index, entry in ipairs(range) do
+                        if index <= 8 then add(range_preview, coop_trace_value(entry)) end
+                        if coop_as_square(entry) == old_square then
+                            legal_king_move = true
+                            break
+                        end
+                    end
+                end
+            end
+            coop_log("[COOP KING GHOST CLICK] square=" .. coop_trace_value(clicked_square)
+                .. " origin=" .. coop_string(clicked_square == old_square)
+                .. " destination=" .. coop_string(clicked_square == new_square)
+                .. " legal_king_move=" .. coop_string(legal_king_move)
+                .. " hero_ready=" .. coop_string(hero and hero.ready)
+                .. " range_length=" .. coop_string(range_length)
+                .. " range_preview=" .. coop_join(range_preview, "/")
+                .. " free=" .. coop_string(is_free(clicked_square)))
+            -- The old-square button bypasses the native King's click
+            -- handler. Run its Folly Shield check only on an actual move
+            -- click, leaving the movement arrow visible as in vanilla.
+            if legal_king_move and type(check_folly_shields) == "function"
+                and check_folly_shields(old_square) then
+                coop_log("[COOP KING GHOST CLICK] blocked by Folly Shield")
+                return true
+            end
+            if legal_king_move and move_hero then
+                mode.coop_manual_king_origin_sq = hero.sq
+                mode.coop_manual_king_turn_pending = old_square
+                mode.coop_manual_king_turn_frames = 60
+                -- Hide the temporary arrow as soon as this move is
+                -- committed. The turn's normal button cleanup follows
+                -- after the movement animation finishes.
+                coop_mute_stale_knight_pickup(false)
+                move_hero(old_square)
+            end
+            return true
+        end
+    end
+    if mode.coop_selected == "king" then
+        coop_duet_begin_king_action(coop_get_square_at_mouse(click_x, click_y))
+    end
+    if mode.coop_selected == "knight" and mode.coop_knight then
+        local knight = mode.coop_knight
+        local move_targets = coop_get_knight_input_targets(knight)
+        local coordinate_target = coop_get_square_at_mouse(click_x, click_y)
+        local native_target, native_target_source = coop_find_mouse_target(move_targets)
+        local target = coordinate_target
+        local target_is_legal = false
+        local blade_available = not coop_knight_soul_ready(knight)
+        local coordinate_target_is_actionable = coordinate_target
+            and blade_available
+            and coop_knight_can_attack_target(knight, coordinate_target) or false
+        local native_target_is_actionable = false
+        if coordinate_target then
+            for _, sq in ipairs(move_targets) do
+                if sq == coordinate_target then
+                    coordinate_target_is_actionable = true
+                    break
+                end
+            end
+        end
+        if native_target then
+            for _, sq in ipairs(move_targets) do
+                if sq == native_target then
+                    native_target_is_actionable = true
+                    break
+                end
+            end
+            if blade_available and not native_target_is_actionable
+                and coop_knight_can_attack_target(knight, native_target) then
+                native_target_is_actionable = true
+            end
+        end
+        -- A click on a visible Knight destination or adjacent enemy must
+        -- keep that square. The native helper may still resolve a King
+        -- button left under the pointer and redirect the Knight's action.
+        if native_target_is_actionable and not coordinate_target_is_actionable then
+            target = native_target
+        end
+        for _, sq in ipairs(move_targets) do
+            if sq == target then target_is_legal = true break end
+        end
+        local board_left, board_top = coop_get_board_geometry()
+        local board_click = native_target_is_actionable
+            or (click_x >= board_left and click_x < board_left + 128
+                and click_y >= board_top and click_y < board_top + 128)
+
+        -- Handle the new cards before the native soul button runs. Native
+        -- activation gives the movement pattern to hero (the King), not
+        -- to the independently controlled 2P Knight.
+        local soul_button = coop_get_soul_button_at(click_x, click_y)
+        if soul_button then
+            local soul = coop_find_soul_for_button(soul_button)
+            if coop_select_knight_soul(soul) then
+                btnclr()
+                coop_log("[COOP SOUL] selected for Knight id=" .. coop_string(soul.id))
+                return true
+            end
+            if _log and not soul then
+                _log("[COOP SOUL] could not resolve button descriptor x="
+                    .. coop_string(soul_button.x) .. " y=" .. coop_string(soul_button.y))
+            end
+            return
+        end
+
+        -- `prepend` callbacks cannot cancel the base game's handler.
+        -- Consume every left click while the Knight is selected: clicks
+        -- outside the board still reach the native fire handler otherwise.
+        -- Pause/menu clicks have already been passed through above.
+        btnclr()
+
+        if board_click and target and coop_knight_soul_ready(knight)
+            and mode.coop_knight_selected_soul.id == 1 then
+            coop_anchor_knight_charge(knight, target)
+            return true
+        end
+
+        if coop_perform_knight_action(knight, target, {
+            board_click=board_click, target_is_legal=target_is_legal,
+            click_x=click_x, click_y=click_y, native_target=native_target,
+            native_target_source=native_target_source, coordinate_target=coordinate_target,
+            native_target_is_actionable=native_target_is_actionable
+        }) then return true end
+
+        coop_log("[COOP INPUT] click target=" .. coop_trace_value(target)
+            .. " board_click=" .. coop_string(board_click)
+            .. " legal_move=" .. coop_string(target_is_legal)
+            .. " native_target=" .. coop_trace_value(native_target)
+            .. " target_api=" .. coop_string(native_target_source)
+            .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
+            .. " board_left=" .. coop_string(board_left)
+            .. " board_top=" .. coop_string(board_top)
+            .. " MCW=" .. coop_string(MCW)
+            .. " board_y=" .. coop_string(board_y)
+            .. " target_source=board_coordinates")
+        return true
+    end
+    coop_log("[COOP INPUT CLICK] selected=" .. coop_string(mode.coop_selected)
+        .. " mouse=" .. coop_string(click_x)
+        .. "," .. coop_string(click_y)
+        .. " king=" .. coop_trace_value(mode.coop_king_hero or hero)
+        .. " knight=" .. coop_trace_value(mode.coop_knight))
+end
+
+local function coop_update_turn_advance()
+    if not mode or mode.id ~= "coop" then return end
+    if mode.coop_king_kill_pending_floor then
+        if mode.coop_floor_transition or mode.lvl ~= mode.coop_king_kill_pending_floor then
+            mode.coop_king_kill_pending_floor = nil
+            mode.coop_king_kill_pending_frames = nil
+        else
+            mode.coop_king_kill_pending_frames = mode.coop_king_kill_pending_frames - 1
+            if mode.coop_king_kill_pending_frames <= 0 then
+                mode.coop_king_kill_pending_floor = nil
+                mode.coop_king_kill_pending_frames = nil
+                mode.coop_force_king_kill_turn = true
+                coop_log("[COOP WIN] advance native turn for white King surrender")
+                new_turn()
+                coop_lock_surrender_controls()
+            end
+        end
+    end
+    local pending = mode.coop_manual_king_turn_pending
+    if pending then
+        mode.coop_manual_king_turn_frames = (mode.coop_manual_king_turn_frames or 1) - 1
+        if hero and hero.sq == pending and not hero.in_move then
+            mode.coop_manual_king_turn_pending = nil
+            mode.coop_manual_king_turn_frames = nil
+            coop_log("[COOP KING GHOST MOVE] committed; starting enemy turn")
+            if remove_buts then
+                -- The manual move bypasses the normal King controller's
+                -- button cleanup. Clear its old square controls before
+                -- the native white phase rebuilds the next turn's controls.
+                remove_buts()
+            end
+            -- The native enemy turn checks ready attacks before moving
+            -- white pieces. Calling opp_move directly skipped those
+            -- attacks when the King entered a threatened old square.
+            mode.coop_manual_king_enemy_turn_pending = {
+                turn = mode.turns,
+                frames = 0,
+            }
+            -- opp_turn owns the completion callback, including white
+            -- movement animations not represented in the events table.
+            opp_turn()
+            return
+        elseif mode.coop_manual_king_turn_frames <= 0 then
+            coop_log("[COOP KING GHOST MOVE] not committed; turn unchanged")
+            mode.coop_manual_king_turn_pending = nil
+            mode.coop_manual_king_turn_frames = nil
+        end
+    end
+    local manual_enemy_turn = mode.coop_manual_king_enemy_turn_pending
+    if manual_enemy_turn then
+        if mode.turns ~= manual_enemy_turn.turn or coop_floor_is_ending() then
+            mode.coop_manual_king_enemy_turn_pending = nil
+        else
+            -- opp_turn() can return without advancing the turn when the King
+            -- ends its extra action on the square of the Knight it just
+            -- killed, so the turn stamp never changes and this handshake
+            -- waits forever. Re-issue the enemy turn instead of skipping it.
+            manual_enemy_turn.frames = (manual_enemy_turn.frames or 0) + 1
+            if manual_enemy_turn.frames >= 45
+                and not coop_white_move_animation_pending()
+                and not mode.coop_native_turn_in_progress
+                and not mode.coop_pause_menu_open
+                and (not hero or not hero.in_move)
+                and (type(events) ~= "table" or #events == 0) then
+                mode.coop_manual_king_enemy_turn_pending = nil
+                coop_log("[COOP UNSTICK] enemy turn did not advance; re-issuing"
+                    .." floor=" .. coop_string(mode.lvl)
+                    .. " turn=" .. coop_string(mode.turns))
+                if type(new_turn) == "function" then new_turn() end
+            end
+        end
+    end
+    -- Refresh the native cursor once after switching control.
+    if mode.coop_cursor_refresh_pending and not mode.coop_surrender_input_locked
+        and not coop_white_move_animation_pending()
+        and reset_move_cursor and hero and hero.sq then
+        reset_move_cursor()
+        mode.coop_cursor_refresh_pending = false
+        coop_mute_king_button_on_knight_square()
+        coop_log("[COOP CURSOR] refreshed after selection=" .. coop_string(mode.coop_selected))
+        if mode.coop_pickup_cleanup_pending then
+            mode.coop_pickup_cleanup_pending = nil
+            coop_mute_stale_knight_pickup(true)
+        end
+    end
+    if mode.coop_killed_button_refresh_pending
+        and coop_mute_dead_victim_button() then
+        mode.coop_killed_button_refresh_pending = nil
+    end
+    if mode.coop_menu_click_grace and mode.coop_menu_click_grace > 0 then
+        mode.coop_menu_click_grace = mode.coop_menu_click_grace - 1
+    end
+end
+
+local function coop_update_white_move_tracking()
+    if not is_coop_active() then return end
+    if coop_floor_is_ending() then
+        mode.coop_auto_select_knight_pending = nil
+        if mode.coop_knight then mode.coop_knight.ready = false end
+        return
+    end
+    if (mode.coop_white_move_grace_frames or 0) > 0
+        and not mode.coop_pause_menu_open
+        and (type(events) ~= "table" or #events == 0) then
+        local tracked = mode.coop_white_move_tracking
+        local all_finished = tracked and #tracked > 0
+        if all_finished then
+            for _, movement in ipairs(tracked) do
+                if movement.piece and movement.piece.in_move then
+                    movement.seen_in_move = true
+                end
+                if not movement.seen_in_move
+                    or (movement.piece and movement.piece.in_move) then
+                    all_finished = false
+                end
+            end
+        end
+        -- A completed native movement needs only two quiet frames before
+        -- switching control. Unobserved movements retain the 30-frame
+        -- fallback, so early clicks cannot race their animation.
+        if all_finished and mode.coop_white_move_grace_frames > 2 then
+            coop_log("[COOP TURN TRACE] white movement settled; release Knight selection early"
+                .. " floor=" .. coop_string(mode.lvl)
+                .. " turn=" .. coop_string(mode.turns))
+            mode.coop_white_move_grace_frames = 2
+        end
+        mode.coop_white_move_grace_frames = mode.coop_white_move_grace_frames - 1
+        if mode.coop_white_move_grace_frames <= 0 then
+            mode.coop_white_move_tracking = nil
+        end
+    end
+    -- Spent soul buttons are refreshed when the card is consumed, a slot
+    -- is refilled, or the player clicks. Polling the native button tree on
+    -- every idle frame can race the engine's UI rebuild.
+    if mode.coop_soul_refund_watch and hero and hero.sq
+        and (hero.sq.px ~= mode.coop_soul_refund_origin_px
+            or hero.sq.py ~= mode.coop_soul_refund_origin_py) then
+        -- A Knight-soul move was committed instead of canceled. Do not let
+        -- a later, unrelated Knight soul pickup be mistaken for a refund.
+        mode.coop_soul_refund_watch = false
+        mode.coop_soul_revival_descriptor = nil
+        mode.coop_soul_refund_origin_px = nil
+        mode.coop_soul_refund_origin_py = nil
+    end
+    -- Re-clear after the base update: the soul-card caller can set these
+    -- fields after activate_soul's post-hook has already run.
+    if mode.coop_force_clear_hero_soul and mode.coop_force_clear_hero_soul > 0 then
+        hero.soul = mode.coop_hero_soul_cleanup
+        hero.c_soul = mode.coop_hero_c_soul_cleanup
+        hero.behavior = mode.coop_hero_behavior_cleanup
+        mode.coop_force_clear_hero_soul = mode.coop_force_clear_hero_soul - 1
+        coop_log("[COOP SOUL] post-update cleanup frames="
+            .. coop_string(mode.coop_force_clear_hero_soul)
+            .. " hero.soul=" .. coop_string(hero.soul)
+            .. " hero.c_soul=" .. coop_string(hero.c_soul))
+        if mode.coop_force_clear_hero_soul == 0 then
+            mode.coop_hero_soul_cleanup = nil
+            mode.coop_hero_c_soul_cleanup = nil
+            mode.coop_hero_behavior_cleanup = nil
+        end
+    end
+    if mode.knight_ever_died and not mode.coop_knight then
+        -- Soul targets are calculated before the card is clicked. Keep
+        -- the Knight soul range suppressed for the entire dead-knight
+        -- state, so those cached squares never become king moves.
+        mode.coop_block_knight_soul_range = true
+        mode.coop_soul_range_block_turn = nil
+    elseif mode.coop_block_knight_soul_range
+        and mode.turns ~= mode.coop_soul_range_block_turn then
+        mode.coop_block_knight_soul_range = false
+        mode.coop_soul_range_block_turn = nil
+    end
+    coop_refresh_knight_death()
+    if not mode.coop_floor_transition
+        and not mode.coop_spawn_wait_for_turn
+        and not mode.knight_ever_died and not mode.coop_knight then
+        spawn_coop_knight()
+    end
+    coop_spawn_barricades()
+    coop_break_king_barricade()
+    coop_track_knight_presence()
+    coop_watch_bishop_preparation()
+    coop_refresh_divisive_edict()
+    if mode.coop_select_king_pending then
+        mode.coop_select_king_pending = nil
+        -- Knight movement, blade, and charge do not call native new_turn.
+        -- Mark their action before the King can move, otherwise the
+        -- King's move is swallowed as the first half of another round.
+        mode.black_actions = 1
+        if mode.coop_selected ~= "king" then coop_set_selected("king") end
+    end
+    if mode.coop_auto_select_knight_pending then
+        local knight = mode.coop_knight
+        -- Delayed white-card reinforcements can still be animating after
+        -- init_new_turn. Leave the King selected until those events end.
+        local waiting_for_events = (type(events) == "table" and #events > 0)
+            or coop_white_move_animation_pending()
+        if waiting_for_events and _log then
+            local key = coop_string(mode.lvl) .. ":" .. coop_string(mode.turns)
+            if mode.coop_auto_select_wait_logged ~= key then
+                mode.coop_auto_select_wait_logged = key
+                _log("[COOP TURN TRACE] wait for white animation before Knight selection"
+                    .. " floor=" .. coop_string(mode.lvl)
+                    .. " turn=" .. coop_string(mode.turns)
+                    .. " events=" .. coop_string(type(events) == "table"
+                        and #events or nil)
+                    .. " grace=" .. coop_string(mode.coop_white_move_grace_frames))
+            end
+        end
+        if mode.knight_ever_died or not knight or knight.ready == false then
+            mode.coop_auto_select_knight_pending = nil
+            mode.coop_king_move_input_locked = nil
+            mode.coop_extra_king_action_pending = nil
+        elseif knight.sq and not mode.coop_floor_transition
+            and not mode.coop_pause_menu_open and not waiting_for_events then
+            coop_log("[COOP TURN TRACE] auto-select Knight enter floor="
+                .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns)
+                .. " events=" .. coop_string(type(events) == "table"
+                    and #events or nil))
+            mode.coop_auto_select_knight_pending = nil
+            if mode.coop_selected ~= "knight" then
+                coop_set_selected("knight")
+                coop_log("[COOP INPUT] new round starts with Knight")
+            end
+            mode.coop_king_move_input_locked = nil
+            mode.coop_extra_king_action_pending = nil
+        end
+    end
+    -- Native extra actions do not run init_new_turn. Release the click
+    -- guard after their movement and event animations have settled.
+    if mode.coop_king_move_input_locked
+        and (mode.coop_penta_bonus_pending
+            or mode.coop_extra_king_action_pending)
+        and not mode.coop_manual_king_enemy_turn_pending
+        and not mode.coop_native_turn_in_progress
+        and not mode.coop_auto_select_knight_pending
+        and not (hero and hero.in_move)
+        and (type(events) ~= "table" or #events == 0)
+        and not mode.coop_pause_menu_open then
+        if mode.coop_extra_king_action_pending
+            and mode.coop_extra_king_action_pending > 0 then
+            mode.coop_extra_king_action_pending =
+                mode.coop_extra_king_action_pending - 1
+        else
+            mode.coop_king_move_input_locked = nil
+            mode.coop_extra_king_action_pending = nil
+            coop_log("[COOP ROUND] extra King action input unlocked")
+        end
+    end
+    if mode.coop_selected == "knight" and mode.coop_knight
+        and mode.coop_knight_move_origin_sq
+        and mode.coop_knight.sq ~= mode.coop_knight_move_origin_sq then
+        coop_finish_knight_move(mode.coop_knight, mode.coop_knight.sq)
+    end
+    if not mode.coop_surrender_input_locked
+        and not coop_white_move_animation_pending()
+        and (not coop_controller or coop_controller.can_switch())
+        and btnp("coop_switch", 0)
+        and mode.coop_knight then
+        local knight = mode.coop_knight
+        local changed = false
+        if mode.coop_selected == "knight" and knight.ready ~= false then
+            -- Tab is an optional pass when 2P has no desired move.
+            changed = coop_pass_knight_action()
+        elseif mode.coop_selected == "king" and knight.ready ~= false then
+            -- Allows selecting a Knight revived during the King's phase.
+            coop_set_selected("knight")
+            changed = true
+        end
+        if changed then
+            coop_log("[COOP INPUT] Tab selected=" .. coop_string(mode.coop_selected)
+                .. " knight_ready=" .. coop_string(knight.ready ~= false))
+            sfx("menu_in")
+        end
+    end
+    if not mode.coop_knight and mode.knight_ever_died and btnp("coop_revive", 0) then
+        activate_soul(1, hero.sq)
+    end
+end
+
+local function coop_update_warrant_hunter()
+    if not is_coop_active() then return end
+    coop_assign_warrant_hunter()
+end
+
+local function coop_update_refilled_soul_buttons()
+    if not is_coop_active() then return end
+    for _, guard in ipairs(mode.coop_spent_soul_click_guards or {}) do
+        if (guard.soul and guard.soul.id ~= nil)
+            or (guard.refilled_slot and guard.refilled_slot.id ~= nil) then
+            -- A soul won during a Knight kill may be refilled before its
+            -- native button can safely be reached. Retry after the
+            -- animation rather than leaving that button disabled.
+            coop_refresh_spent_souls()
+            break
+        end
+    end
+end
+
+local function coop_install_input_hooks()
+    coop_clip_preview_hook("dr_crosshair")
+    coop_clip_preview_hook("dr_movemap")
+    prepend("_update", coop_update_knight_input, "coop_board_click_guard")
+    append("_update", coop_update_turn_advance, "coop_menu_click_grace")
+    append("_update", coop_update_white_move_tracking, "coop_blocker_update")
+    append("_update", coop_update_warrant_hunter, "coop_warrant_hunter_update")
+    append("_update", coop_update_refilled_soul_buttons, "coop_refilled_soul_buttons")
+end
+
+local function coop_on_soul(soul, sq)
+    if is_coop_active() and mode.coop_selected == "knight"
+        and mode.coop_knight and mode.coop_knight.ready ~= false
+        and type(soul) == "table" and soul.id ~= nil then
+        local usable = (soul.id == 1 and has_card and coop_has_knight_skill("Co-op Knight Spirit"))
+            or ((soul.id == 2 or soul.id == 3)
+                and has_card and coop_has_knight_skill("Co-op In-Law"))
+        if usable then
+            mode.coop_knight_selected_soul = soul
+            mode.coop_knight_soul_king_state = {
+                soul=hero.soul, c_soul=hero.c_soul,
+                behavior=coop_copy_table(hero.behavior)
+            }
+        end
+    end
+    -- This game version passes the soul animation/descriptor table, whose
+    -- `id` is the soul type. Knight soul is id 1. activate_soul itself is
+    -- not replaceable, so defer the revive until its native effect runs.
+    if is_coop_active() and mode.knight_ever_died and not mode.coop_knight
+        and type(soul) == "table" and soul.id == 1 then
+        mode.coop_soul_revival_pending = true
+        mode.coop_block_knight_soul_range = true
+        mode.coop_soul_range_block_turn = mode.turns
+        mode.coop_hero_soul_before = hero.soul
+        mode.coop_hero_c_soul_before = hero.c_soul
+        mode.coop_hero_behavior_before = coop_copy_table(hero.behavior)
+        mode.coop_hero_sq_before = hero.sq
+        mode.coop_hero_px_before = hero.sq and hero.sq.px
+        mode.coop_hero_py_before = hero.sq and hero.sq.py
+        mode.coop_soul_revival_descriptor = soul
+        coop_log("[COOP SOUL] knight soul reserved for 2P revive")
+    end
+end
+
+local function coop_on_soul_refund_cleanup(...)
+    if mode and mode.id == "coop" then
+        local filled_slot = mode.coop_pending_soul_fill_slot
+        mode.coop_pending_soul_fill_slot = nil
+        local args = {...}
+        -- Native cancellation has no source and runs on right-click.
+        -- A captured Knight also grants id=1, even while the King stays
+        -- on the revival square; that is a new soul, never a refund.
+        local is_revival_refund = mode.coop_soul_refund_watch
+            and args[1] == 1 and args[2] == nil and mcr
+        if is_revival_refund then
+            local stayed_on_origin = hero and hero.sq
+                and hero.sq.px == mode.coop_soul_refund_origin_px
+                and hero.sq.py == mode.coop_soul_refund_origin_py
+            if stayed_on_origin and mode.coop_soul_revival_descriptor
+                and filled_slot and filled_slot.id == 1 and exhaust_soul then
+                -- Only consume the slot THIS refund filled. The original
+                -- descriptor may now contain a legitimate captured soul.
+                -- A full inventory means no new slot was filled: consume none.
+                local guard = coop_track_spent_soul(filled_slot)
+                mode.coop_spent_soul_click_guard = guard
+                mode.coop_stats_soul_refund_cleanup = true
+                exhaust_soul(filled_slot)
+                mode.coop_stats_soul_refund_cleanup = nil
+                coop_hide_spent_soul(guard)
+                coop_log("[COOP SOUL] removed Knight soul returned by cancel; empty_slot="
+                    .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
+            end
+            mode.coop_soul_refund_watch = false
+            mode.coop_soul_revival_descriptor = nil
+            mode.coop_soul_refund_origin_px = nil
+            mode.coop_soul_refund_origin_py = nil
+        else
+            -- Only release guards for the slot that native add_soul filled.
+            -- The other soul slots retain their double-click protection.
+            if _log and filled_slot then
+                _log("[COOP SOUL] added into slot x=" .. coop_string(filled_slot.x)
+                    .. " y=" .. coop_string(filled_slot.y)
+                    .. " id=" .. coop_string(filled_slot.id)
+                    .. " oid=" .. coop_string(filled_slot.oid)
+                    .. " draw=" .. type(filled_slot.dr))
+            end
+            coop_restore_refilled_soul(filled_slot)
+            coop_release_spent_soul_slot(filled_slot)
+            coop_refresh_spent_souls()
+        end
+    end
+end
+
+local function coop_on_soul_range_override(piece, range_piece)
+    if not is_coop_active() or mode.coop_floor_transition
+        or mode.coop_spawn_wait_for_turn or mode.coop_native_turn_in_progress
+        or (piece ~= hero and piece ~= mode.coop_king_hero) then return end
+    local suppress_soul_range = mode.coop_block_knight_soul_range
+        and type(range_piece) == "table"
+        and (range_piece.type == 1 or range_piece.id == 1)
+    if not suppress_soul_range then return end
+
+    mode.coop_soul_range_override_entries = {}
+    local seen = {}
+    local function override(candidate)
+        if type(candidate) ~= "table" or seen[candidate] then return end
+        seen[candidate] = true
+        add(mode.coop_soul_range_override_entries, {
+            piece = candidate,
+            custom_range = candidate.custom_range,
+            behavior = candidate.behavior
+        })
+        candidate.custom_range = coop_no_soul_moves
+        candidate.behavior = {}
+    end
+    override(range_piece)
+    override(coop_get_knight_soul_piece())
+    coop_log("[COOP RANGE] suppress Knight soul range=" .. coop_string(suppress_soul_range))
+end
+
+local function coop_on_knight_hit_death(piece)
+    coop_stats_hit_end(piece)
+    coop_award_ritual_dagger_kill(piece)
+    if mode and mode.id == "coop"
+        and piece == mode.coop_redemption_native_knight then
+        -- A prevented death must leave the playable Knight's custom type
+        -- intact. A dead piece stays type 1 for queued Redemption events.
+        if piece.dead ~= true and type(piece.hp) == "number" and piece.hp > 0 then
+            piece.type = mode.coop_redemption_native_knight_type
+        end
+        mode.coop_redemption_native_knight = nil
+        mode.coop_redemption_native_knight_type = nil
+    end
+    if is_coop_active() and coop_is_white_king(piece) and _log then
+        _log("[COOP KING HIT] returned hp=" .. coop_string(piece.hp)
+            .. " floor_transition=" .. coop_string(mode.coop_floor_transition))
+    end
+    if mode and mode.id == "coop" and piece and piece == mode.coop_knight
+        and (piece.dead == true or (piece.hp ~= nil and piece.hp <= 0)) then
+        coop_mark_knight_dead(piece)
+    end
+    if type(piece) == "table" and piece.team == 1
+        and (piece.dead == true or (piece.hp ~= nil and piece.hp <= 0)) then
+        coop_award_warrant_knight_soul(piece)
+    end
+    coop_duet_king_hit(piece)
+end
+
+local function coop_on_death(...)
+    if not is_coop_active() then return end
+    local args = {...}
+    local victim = args[1]
+    -- Some death paths pass a square or include the attacker. Only mark
+    -- the knight dead when it appears in the event and is no longer on
+    -- the board (or has definitively reached zero HP).
+    if coop_event_has_knight(...) and mode.coop_knight then
+        local knight = mode.coop_knight
+        if knight.dead == true or (knight.hp ~= nil and knight.hp <= 0)
+            or not coop_knight_is_on_board(knight) then
+            coop_mark_knight_dead(knight)
+        end
+    end
+    if type(victim) == "table" then
+        victim = victim.piece or victim.entity or victim.target or victim
+    end
+    local warrant_type = get_coop_warrant_type()
+    local is_warrant = type(victim) == "table" and victim.team == 1
+        and warrant_type ~= nil and victim.type == warrant_type
+    if is_warrant then coop_award_warrant_knight_soul(victim) end
+    -- A full soul bar revives 2P after either ordinary Knight or
+    -- Warrant Knight provides the Knight soul.
+    if type(victim) == "table" and victim.team == 1
+        and (victim.type == 1 or is_warrant)
+        and not mode.coop_knight and mode.knight_ever_died then
+        if get_empty_soul_slot() == nil then
+            revive_coop_knight()
+        end
+    end
+end
+
+local function coop_install_soul_hooks()
+    -- soul revive
+    prepend("activate_soul", coop_on_soul, "coop_soul")
+
+    append("activate_soul", function(soul)
+        if mode and mode.id == "coop" then
+            local old = mode.coop_knight_soul_king_state
+            if old and hero then
+                hero.soul = old.soul
+                hero.c_soul = old.c_soul
+                hero.behavior = old.behavior
+                mode.coop_hero_soul_cleanup = old.soul
+                mode.coop_hero_c_soul_cleanup = old.c_soul
+                mode.coop_hero_behavior_cleanup = old.behavior
+                mode.coop_force_clear_hero_soul = 3
+                mode.coop_knight_soul_king_state = nil
+            end
+            -- The native soul effect runs first; then finish the Knight revive.
+            if mode.coop_soul_revival_pending then
+                coop_complete_soul_revival()
+            end
+        end
+    end, "coop_soul_immediate_revival")
+
+    prepend("add_soul", function(id, from)
+        coop_stats_soul_refund(id, from)
+        if not is_coop_active() or type(get_empty_soul_slot) ~= "function" then return end
+        local slot = get_empty_soul_slot()
+        mode.coop_pending_soul_fill_slot = slot
+        if type(slot) == "table" and type(slot.x) == "number"
+            and type(slot.y) == "number" then
+            mode.coop_known_soul_slots = mode.coop_known_soul_slots or {}
+            for _, known in ipairs(mode.coop_known_soul_slots) do
+                if known == slot then return end
+            end
+            add(mode.coop_known_soul_slots, slot)
+        end
+    end, "coop_remember_soul_slot")
+
+    append("add_soul", coop_on_soul_refund_cleanup, "coop_soul_refund_cleanup")
+
+    -- The log shows get_soul_range delegates the actual targets to
+    -- get_range(hero, knight_piece). Override the source piece for that call,
+    -- not around get_soul_range itself (which restores too early).
+    prepend("get_range", coop_on_soul_range_override, "coop_soul_range_override")
+
+    append("get_range", function()
+        local entries = mode and mode.id == "coop" and mode.coop_soul_range_override_entries
+        if not entries then return end
+        for _, entry in ipairs(entries) do
+            entry.piece.custom_range = entry.custom_range
+            entry.piece.behavior = entry.behavior
+        end
+        mode.coop_soul_range_override_entries = nil
+    end, "coop_soul_range_restore")
+
+    prepend("exhaust_soul", function(soul)
+        coop_stats_soul_begin(soul)
+    end, "coop_stats_soul_begin")
+    append("exhaust_soul", function(soul)
+        coop_stats_soul_end(soul)
+    end, "coop_stats_soul_end")
+
+    -- death check
+    -- Handle both the generic death event and the underlying removal/damage
+    -- paths. These hooks use only the affected piece argument, never the killer.
+    append("kill_piece", function(piece)
+        coop_award_ritual_dagger_kill(piece, true)
+        coop_mark_knight_dead(piece)
+        if is_coop_active() and coop_is_white_king(piece) then
+            -- Gun kills reach this path without the Knight blade's explicit
+            -- surrender lock. Stop queued 2P input before native turn cleanup.
+            mode.coop_surrender_input_locked = true
+            mode.coop_auto_select_knight_pending = nil
+            if mode.coop_knight then mode.coop_knight.ready = false end
+            coop_log("[COOP WIN] white King removed; Knight input locked")
+        end
+    end, "coop_knight_kill_piece")
+
+    prepend("hit", function(piece, damage, attributes)
+        coop_stats_hit_begin(piece, attributes)
+        coop_prepare_redemption_knight_death(piece, damage)
+        if is_coop_active() and coop_is_white_king(piece) and _log then
+            _log("[COOP KING HIT] enter hp=" .. coop_string(piece.hp)
+                .. " damage=" .. coop_string(damage)
+                .. " turn=" .. coop_string(mode.turns)
+                .. " knight=" .. coop_string(mode.coop_knight ~= nil)
+                .. " revived_this_turn=" .. coop_string(
+                    mode.coop_revive_locked_turn == mode.turns))
+        end
+    end, "coop_white_king_hit_enter_trace")
+
+    append("hit", coop_on_knight_hit_death, "coop_knight_hit_death")
+
+    append("ev_death", coop_on_death, "coop_death")
+end
+
 function initialize()
     coop_install_royal_cards()
     coop_load_janissary_art()
@@ -2788,1839 +4573,11 @@ function initialize()
     defbtn("coop_revive", 0, "k:r")
     defbtn("coop_rally_space", 0, "k:space")
 
-    -- Like Karma, this card changes the King's built weapon stats. Rebuild
-    -- only when the King/Knight adjacency changes, never once per frame.
-    append("build_stack", function()
-        if not mode or mode.id ~= "coop" then return end
-        local state = coop_divisive_edict_state()
-        if type(stack) ~= "table" then
-            mode.coop_divisive_edict_applied_state = nil
-            return
-        end
-        if state == "adjacent" then
-            stack.spread = (stack.spread or 0) + 15
-        elseif state == "apart" then
-            stack.firepower = (stack.firepower or 0) - 1
-        end
-        mode.coop_divisive_edict_applied_state = state
-    end, "coop_divisive_edict_stack")
-
-    -- Controller fire has a separate input binding from mouse movement.
-    prepend("_update", function()
-        if coop_joust_blocks_shot() then btnclr("shoot", 0) end
-    end, "coop_joust_block_controller_shoot")
-
-    -- King movement can leave hero.ready=false even while King controls are
-    -- usable. Watch the input and the native refill entry without that flag.
-    -- The pending flag keeps the two paths from stacking the bonus.
-    prepend("_update", function()
-        if btnp("reload", 0) or btnp("coop_rally_space", 0) then
-            coop_try_rally_reload("reload input")
-        end
-    end, "coop_rally_manual_reload_start")
-    prepend("clean_up", function()
-        if mode and mode.id=="coop" and mode.coop_hidden_boss_pending then
-            mode.coop_hidden_boss_refilling=true
-        end
-        coop_depart_mixed_horsemen()
-    end, "coop_mixed_horsemen_depart")
-    prepend("ev_reveal_heir",function()
-        if mode and mode.id=="coop" and seek_role("heir") then
-            mode.coop_heir_reveal_floor=mode.lvl
-        end
-    end,"coop_heir_reveal_begin")
-    prepend("play",coop_resume_after_heir,"coop_heir_reveal_resume")
-    append("play", function()
-        if mode and mode.id=="coop" and mode.coop_hidden_boss_refilling
-            and playing and hero and not hero.win
-            and not (inter and inter.storming) then
-            coop_resume_hidden_boss()
-        end
-    end, "coop_hidden_boss_play_ready")
-    prepend("refill_ammo", function()
-        coop_try_rally_reload("native refill")
-    end, "coop_rally_native_refill")
-    -- The art is optional while it is being drawn. A pixel sword is drawn
-    -- below when this file has not yet been added to the mod directory.
-    mode.coop_weapon_sheet_loaded = false
-    mode.coop_weapon_sheet_name = nil
-    mode.coop_weapon_source_size = nil
-    mode.coop_weapon_anchor = nil
-    mode.coop_weapon_uses_key = false
-    mode.coop_weapon_pixels = nil
-    mode.coop_weapon_rotated_cache = nil
-    mode.coop_spear_sheet_loaded = false
-    mode.coop_spear_pixels = nil
-    mode.coop_spear_rotated_cache = nil
-    if type(file) == "function" and type(newsrf) == "function" then
-        -- This game's mod wrapper takes (surface_name, filename), unlike
-        -- the raw SUGAR manual's (filename, surface_name) overload.
-        if file("knight_weapon_hi.png") then
-            local loaded_name = newsrf("coop_knight_weapon_hi", "knight_weapon_hi.png")
-            if loaded_name ~= nil and loaded_name ~= false then
-                mode.coop_weapon_sheet_loaded = true
-                mode.coop_weapon_sheet_name = "coop_knight_weapon_hi"
-                mode.coop_weapon_source_size = 48
-                mode.coop_weapon_anchor = 23
-                mode.coop_weapon_uses_key = true
-            end
-        end
-        if not mode.coop_weapon_sheet_loaded and file("knight_weapon.png") then
-            local loaded_name = newsrf("coop_knight_weapon", "knight_weapon.png")
-            if loaded_name ~= nil and loaded_name ~= false then
-                mode.coop_weapon_sheet_loaded = true
-                mode.coop_weapon_sheet_name = "coop_knight_weapon"
-                mode.coop_weapon_source_size = 24
-                mode.coop_weapon_anchor = 11
-            end
-        end
-        if file("knight_spear_hi.png") then
-            local loaded_name = newsrf("coop_knight_spear_hi", "knight_spear_hi.png")
-            if loaded_name ~= nil and loaded_name ~= false then
-                mode.coop_spear_sheet_loaded = true
-            end
-        end
-    end
-    if _log then
-        _log("[COOP ATTACK API] all_pieces=" .. type(all_pieces)
-            .. " pieces=" .. type(pieces)
-            .. " mode.pieces=" .. type(mode.pieces)
-            .. " get_pieces=" .. type(get_pieces)
-            .. " pcall=" .. type(pcall)
-            .. " hit=" .. type(hit))
-    end
-
-    prepend("xpl_boss",coop_book_snapshot,"coop_book_distance_snapshot")
-    prepend("dark_bishop_up",coop_book_capture_before,"coop_book_capture_before")
-    append("dark_bishop_up",coop_book_capture_after,"coop_book_capture_after")
-    append("init_safe_mode",coop_marshal_danger,"coop_marshal_native_folly")
-    append("init_safe_mode",coop_duel_danger,"coop_duel_native_folly")
-    -- Recheck at the action boundary as well: a delayed Knight hit or an
-    -- independent allied move may change blockers after control was restored.
-    -- This rebuild does not spend shields or advance turns. The original
-    -- check_folly_shields still owns charges, overrides and extra-turn safety.
-    prepend("check_folly_shields",coop_refresh_king_danger,"coop_fresh_folly_danger")
-    mode.coop_duel_draw_charge=coop_duel_draw_charge
-    -- Draw role-specific HUD after the board capture, so the host's Rebel
-    -- Knight label is not baked into the client's Revolutionary Knight view.
-    append("_draw",coop_duel_draw,"coop_duel_overlay")
-
-
-    -- Draw the weapon at the Knight's own draw call. The base piece is then
-    -- drawn over its grip, and the game's menus are drawn over both.
-    prepend("dr_piece", function(piece, x, y)
-        if not mode.coop_floor_transition
-            and piece == mode.coop_knight and type(x) == "number"
-            and type(y) == "number" then
-            coop_draw_knight_weapon(x + 8, y + 8)
-        end
-    end, "coop_knight_weapon_behind_piece")
-
-    -- A charge target may contain a piece. Draw that square's corner marks
-    -- just before its piece, so the sprite stays above the movement hint.
-    prepend("dr_piece", function(piece)
-        if not mode.coop_floor_transition and piece and piece.sq then
-            coop_draw_knight_move_hints(piece)
-        end
-    end, "coop_knight_occupied_hints_behind_piece")
-
-    -- draw_inter runs before the board in this build, so board squares cover
-    -- marks placed there. Draw Knight destinations after the game scene.
-    append("draw_game", function()
-        if not mode.coop_run_active or mode.coop_floor_transition then return end
-        coop_marshal_draw()
-        coop_draw_barricades()
-        coop_draw_mechanism_order_icon()
-        coop_draw_knight_move_hints(nil)
-        coop_draw_warrant_execution()
-        coop_draw_bounty_notice()
-        if is_coop_active() and not mode.coop_pause_menu_open then
-            local charge = mode.coop_knight_charge
-            if charge and charge.floor == mode.lvl
-                and charge.target_px and charge.target_py then
-                local board_left, board_top = coop_get_board_geometry()
-                local tx = board_left + charge.target_px * 16 + 8
-                local ty = board_top + charge.target_py * 16 + 8
-                -- Mark only the chosen square; the direction line stays hidden.
-                rectfill(tx-1, ty-5, tx+1, ty-4, 5)
-                rectfill(tx-1, ty+4, tx+1, ty+5, 5)
-                rectfill(tx-5, ty-1, tx-4, ty+1, 5)
-                rectfill(tx+4, ty-1, tx+5, ty+1, 5)
-                rectfill(tx-1, ty-1, tx+1, ty+1, 3)
-            end
-            for _, guard in ipairs(mode.coop_spent_soul_click_guards or {}) do
-                local soul = guard.soul
-                if soul and soul.id == nil
-                    and type(soul.x) == "number" and type(soul.y) == "number" then
-                    coop_draw_empty_soul_slot(soul)
-                    if _log and not guard.empty_frame_logged then
-                        _log("[COOP SOUL] drew empty slot frame x="
-                            .. coop_string(soul.x) .. " y=" .. coop_string(soul.y))
-                        guard.empty_frame_logged = true
-                    end
-                end
-            end
-        end
-        if is_coop_active() then
-            coop_draw_selected_soul_dissolve()
-            coop_draw_soul_vanish()
-        end
-    end, "coop_knight_move_hints_after_game")
-
-    -- The Knight's board-click handler clears mouse input for destinations on
-    -- the board. The pause menu can overlap that area, so leave all input to
-    -- the native UI while a menu is open. Track the menu through the engine's
-    -- exposed lifecycle functions; these hooks only update our local flag.
-    prepend("open_menu", function()
-        if mode and mode.id == "coop" then
-            mode.coop_pause_menu_open = true
-            mode.coop_menu_click_grace = 2
-            if _log then _log("[COOP UI] menu opened") end
-        end
-    end, "coop_menu_open_state")
-    prepend("init_menu", function()
-        if mode and mode.id == "coop" then
-            mode.coop_duel = nil
-            mode.coop_run_active = false
-            mode.coop_opening_king_turn = false
-            mode.coop_auto_select_knight_pending = nil
-            mode.coop_select_king_pending = nil
-            mode.coop_cursor_refresh_pending = nil
-            mode.coop_surrender_input_locked = false
-            mode.coop_spent_soul_click_guard = nil
-            mode.coop_spent_soul_click_guards = {}
-            mode.coop_pending_soul_fill_slot = nil
-            -- The old board is about to be discarded. Do not write callbacks
-            -- back to its buttons while the native UI is being torn down.
-            mode.coop_knight_soul_hover_guards = {}
-            mode.coop_known_soul_slots = {}
-            mode.coop_knight_selected_soul = nil
-            mode.coop_knight_charge = nil
-            mode.coop_knight_soul_king_state = nil
-        end
-    end, "coop_stop_on_main_menu")
-    prepend("close_menu", function()
-        if mode and mode.id == "coop" then
-            -- This callback can run during menu input dispatch, before the
-            -- selected menu action has completed. Leave the open state alone;
-            -- Escape/resume/unpause owns the actual transition.
-            mode.coop_menu_click_grace = 2
-            if _log then _log("[COOP UI] menu closed") end
-        end
-    end, "coop_menu_close_state")
-    prepend("unpause", function()
-        if mode and mode.id == "coop" then
-            mode.coop_pause_menu_open = false
-            mode.coop_menu_click_grace = 2
-            if _log then _log("[COOP UI] unpaused") end
-        end
-    end, "coop_menu_unpause_state")
-    prepend("resume", function()
-        if mode and mode.id == "coop" then
-            mode.coop_pause_menu_open = false
-            mode.coop_menu_click_grace = 2
-            if _log then _log("[COOP UI] resumed") end
-        end
-    end, "coop_menu_resume_state")
-
-    mode.ranks_index = ranks and mid(0, bget(0,4), #ranks-1) or nil
-    mode.weapons_index = weapons and mid(0, bget(1,4), #weapons-1) or nil
-
-    append("add_card", function(card)
-        if not mode or mode.id ~= "coop" then return end
-        local card_id = type(card) == "table" and (card.id or card.name or card.gid) or card
-        if card_id == "Grindstone" then
-            mode.coop_grindstone_turns = 0
-            mode.coop_grindstone_last_turn = nil
-        end
-        if card_id == "Co-op Warrant" then coop_assign_warrant_hunter() end
-        if card_id == "Co-op Cheval de Frise" then
-            mode.coop_barricades_pending = true
-        end
-        if card_id == "Co-op Bounty Cavalry"
-            or (card_id == "Co-op Warrant" and has_card
-                and has_card("Co-op Bounty Cavalry")) then
-            mode.coop_bounty_kills = 0
-        end
-        if _log then
-            _log("[COOP CARD] added=" .. coop_string(card_id)
-                .. " floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns))
-        end
-    end, "coop_card_choice_trace")
-
-    -- Add earned reinforcements before the native turn builds white actions.
-    prepend("init_new_turn", coop_spawn_bounty_reinforcement,
-        "coop_bounty_reinforcement_before_turn")
-    prepend("init_new_turn", coop_spawn_revival_bishops,
-        "coop_revival_bishops_before_turn")
-    prepend("init_new_turn", coop_spawn_pending_phantoms,
-        "coop_phantoms_before_turn")
-
-    prepend("init_new_turn", function()
-        if is_coop_active() and _log then
-            _log("[COOP TURN TRACE] init_new_turn enter floor="
-                .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns)
-                .. " selected=" .. coop_string(mode.coop_selected))
-        end
-        if mode and mode.id == "coop" then
-            mode.coop_native_turn_in_progress = true
-        end
-    end, "coop_init_new_turn_enter_trace")
-
-    -- new_turn
-    append("init_new_turn", function()
-        coop_resume_hidden_boss()
-        if mode and mode.id == "coop" then
-            mode.coop_native_turn_in_progress = false
-            mode.coop_duet_king_window = nil
-            if mode.coop_manual_king_enemy_turn_pending and _log then
-                _log("[COOP KING GHOST MOVE] native completion advanced turn="
-                    .. coop_string(mode.coop_manual_king_enemy_turn_pending.turn)
-                    .. "->" .. coop_string(mode.turns))
-            end
-            mode.coop_manual_king_enemy_turn_pending = nil
-            mode.coop_extra_king_action_pending = nil
-            mode.coop_locked_new_turn_origin = nil
-        end
-        if not is_coop_active() then return end
-        mode.coop_knight_killed_square = nil
-        mode.coop_knight_killed_squares = nil
-        mode.coop_knight_killed_attack_squares = nil
-        mode.coop_killed_button_refresh_pending = nil
-        -- A completed native turn consumes any pending pentagram bonus. The
-        -- pentagram path itself grants one more King action without calling
-        -- init_new_turn here.
-        mode.coop_penta_bonus_pending = nil
-        if _log then
-            _log("[COOP TURN TRACE] init_new_turn returned floor="
-                .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns))
-        end
-        if coop_floor_is_ending() then
-            -- A surrender turn must not refresh the old board or grant the
-            -- Knight another action while the execution is still playing.
-            mode.coop_surrender_input_locked = true
-            mode.black_actions = 0
-            if mode.coop_knight then mode.coop_knight.ready = false end
-            mode.coop_auto_select_knight_pending = nil
-            if mode.coop_selected ~= "king" then coop_set_selected("king") end
-            if not mode.coop_floor_transition then coop_lock_surrender_controls() end
-            return
-        end
-        -- new_level can expose hero.sq to _update before the engine has built
-        -- its path-distance data. Spawn only once the first turn is initialized.
-        mode.coop_spawn_wait_for_turn = false
-        coop_refresh_knight_death()
-        coop_queue_phantom_turn()
-        -- Each turn builds a fresh native button map. Jump-square overrides
-        -- from the previous turn must not handle clicks on this board state.
-        mode.coop_last_knight_origin_sq = nil
-        mode.coop_last_knight_destination_sq = nil
-        mode.coop_knight_move_origin_sq = nil
-        if not mode.coop_knight and not mode.knight_ever_died then
-            spawn_coop_knight()
-        end
-        if mode.coop_opening_king_turn then
-            -- Each floor's first playable round belongs to the King. Keep its
-            -- native new_turn interception accounted for, so the King's
-            -- action advances the round instead of being suppressed.
-            mode.black_actions = 1
-            if mode.coop_knight then mode.coop_knight.ready = false end
-            mode.coop_auto_select_knight_pending = nil
-            if mode.coop_selected ~= "king" then coop_set_selected("king") end
-            mode.coop_king_move_input_locked = nil
-            if _log then _log("[COOP ROUND] opening round: King acts first") end
-            coop_mute_king_button_on_knight_square()
-            return
-        end
-        mode.black_actions = 0
-        if mode.coop_knight then
-            local revived_this_turn = mode.coop_revive_locked_turn ~= nil
-                and mode.coop_revive_locked_turn == mode.turns
-            -- The revived Knight cannot act this round, so the King's move
-            -- must be counted as the second and final black action.
-            if revived_this_turn then mode.black_actions = 1 end
-            mode.coop_knight.ready = not revived_this_turn
-            mode.coop_knight.delay = 0
-            mode.coop_auto_select_knight_pending = not revived_this_turn
-            if mode.coop_auto_select_knight_pending then
-                mode.coop_king_move_input_locked = true
-            end
-            if not revived_this_turn then mode.coop_revive_locked_turn = nil end
-        else
-            mode.coop_auto_select_knight_pending = nil
-            if mode.coop_selected ~= "king" then coop_set_selected("king") end
-        end
-        coop_mute_king_button_on_knight_square()
-        if not mode.coop_auto_select_knight_pending then
-            mode.coop_king_move_input_locked = nil
-        end
-        if mode.coop_dead_knight_cursor_refresh_pending then
-            -- Rebuild the King's controls on the next frame, after native
-            -- enemy movement and init_new_turn have both returned.
-            mode.coop_dead_knight_cursor_refresh_pending = nil
-            mode.coop_cursor_refresh_pending = true
-        end
-    end, "coop_new_turn")
-
-    -- new_level
-    prepend("new_level", function(...)
-        if mode and mode.id == "coop" then
-            coop_log_knight_state("new_level:before")
-            -- The engine clears a living piece's sq reference while preparing
-            -- the next board. A dead custom knight can retain its old square
-            -- reference even though that square no longer contains it. Detect
-            -- that transition before the append hook drops the old instance.
-            local knight = mode.coop_knight
-            if mode.coop_floor_transition and knight and knight.sq
-                and not coop_is_knight(knight.sq.piece) then
-                if _log then
-                    _log("[COOP] stale knight square at floor transition; recording death")
-                end
-                coop_mark_knight_dead(knight)
-            end
-        end
-    end, "coop_record_knight_before_new_level")
-
-    append("new_level", function()
-        if not mode or mode.id ~= "coop" then return end
-        mode.coop_heir_reveal_floor=nil
-        if mode.coop_surrender_input_locked and hero then hero.ready = true end
-        mode.knight_spawned = false
-        -- The board is being replaced. Drop the old entity reference while
-        -- keeping `knight_ever_died` so a dead 2P does not return automatically.
-        mode.coop_knight = nil
-        mode.coop_selected = "king"
-        mode.coop_duet_king_window = nil
-        mode.coop_king_hero = nil
-        mode.coop_select_king_pending = nil
-        mode.coop_auto_select_knight_pending = nil
-        mode.coop_white_move_grace_frames = 0
-        mode.coop_white_move_tracking = nil
-        mode.coop_barricades = {}
-        mode.coop_barricade_squares = {}
-        mode.coop_barricade_floor = nil
-        mode.coop_barricades_pending = has_card
-            and has_card("Co-op Cheval de Frise") or false
-        mode.coop_auto_select_wait_logged = nil
-        mode.coop_force_king_kill_turn = nil
-        mode.coop_surrender_input_locked = false
-        mode.coop_revive_locked_turn = nil
-        mode.coop_knight_move_origin_sq = nil
-        mode.coop_last_knight_origin_sq = nil
-        mode.coop_last_knight_destination_sq = nil
-        mode.coop_knight_killed_square = nil
-        mode.coop_knight_killed_squares = nil
-        mode.coop_knight_killed_attack_squares = nil
-        mode.coop_killed_button_refresh_pending = nil
-        mode.coop_manual_king_turn_pending = nil
-        mode.coop_manual_king_turn_frames = nil
-        mode.coop_manual_king_origin_sq = nil
-        mode.coop_manual_king_enemy_turn_pending = nil
-        mode.coop_extra_king_action_pending = nil
-        mode.coop_penta_move_target = nil
-        mode.coop_penta_bonus_pending = nil
-        mode.coop_pickup_cleanup_pending = nil
-        mode.coop_spawning = false
-        mode.coop_floor_transition = false
-        mode.coop_spawn_wait_for_turn = true
-        mode.coop_knight_seen_on_board = false
-        mode.coop_knight_missing_frames = 0
-        mode.coop_soul_revival_pending = false
-        mode.coop_soul_refund_watch = false
-        mode.coop_soul_revival_descriptor = nil
-        -- Grindstone's delayed blade bonus starts over on each floor.
-        mode.coop_grindstone_turns = 0
-        mode.coop_grindstone_bonus = 0
-        mode.coop_grindstone_last_turn = nil
-        mode.coop_rally_pending = false
-        mode.coop_ritual_dagger_pending = false
-        mode.coop_ritual_dagger_target = nil
-        mode.coop_redemption_native_knight = nil
-        mode.coop_redemption_native_knight_type = nil
-        coop_reset_phantom_state()
-        mode.coop_divisive_edict_applied_state = nil
-        mode.coop_warrant_hunter = nil
-        mode.coop_warrant_assigned_floor = nil
-        mode.coop_warrant_check_pending = nil
-        mode.coop_warrant_execution_fx = nil
-        -- Bounty progress and unspawned rewards belong to the finished floor.
-        mode.coop_bounty_kills = 0
-        mode.coop_bounty_pending = {}
-        mode.coop_bounty_notice = nil
-        mode.coop_royal_vigil_pending = 0
-        mode.coop_revival_bishops_pending = 0
-        -- Soul descriptors and even their button objects can survive a floor
-        -- change. Keep callback functions but drop references to the old UI;
-        -- restoration finds the live button when the slot is refilled.
-        mode.coop_spent_soul_click_guards = mode.coop_spent_soul_click_guards or {}
-        for _, guard in ipairs(mode.coop_spent_soul_click_guards) do
-            guard.buttons = {}
-        end
-        mode.coop_spent_soul_click_guard = mode.coop_spent_soul_click_guards[#mode.coop_spent_soul_click_guards]
-        mode.coop_native_turn_in_progress = false
-        mode.coop_king_move_input_locked = nil
-        mode.coop_extra_king_action_pending = nil
-        mode.coop_locked_new_turn_origin = nil
-        mode.coop_dead_knight_cursor_refresh_pending = nil
-        mode.coop_pending_soul_fill_slot = nil
-        -- The previous floor's button objects are being retired. Restoring
-        -- callbacks on them here can touch a stale native UI tree.
-        mode.coop_knight_soul_hover_guards = {}
-        mode.coop_knight_selected_soul = nil
-        mode.coop_knight_move_soul_to_spend = nil
-        mode.coop_knight_charge = nil
-        mode.coop_knight_soul_king_state = nil
-        mode.coop_soul_refund_origin_px = nil
-        mode.coop_soul_refund_origin_py = nil
-        mode.coop_force_clear_hero_soul = false
-        mode.coop_hero_soul_cleanup = nil
-        mode.coop_hero_c_soul_cleanup = nil
-        mode.coop_hero_behavior_cleanup = nil
-        mode.coop_block_knight_soul_range = false
-        mode.coop_soul_range_block_turn = nil
-        mode.coop_hero_soul_before = nil
-        mode.coop_hero_c_soul_before = nil
-        mode.coop_hero_behavior_before = nil
-        mode.coop_hero_sq_before = nil
-        mode.coop_hero_px_before = nil
-        mode.coop_hero_py_before = nil
-        coop_log_knight_state("new_level:after_reset")
-    end, "coop_new_level")
-
-    -- Block king captures at the engine's target-validation point. The range
-    -- filter in script.lua remains as an additional guard for displayed moves.
-    prepend("is_valid_target", function(...)
-        if mode and mode.id == "coop" and mode.coop_knight and coop_call_targets_white_king(...) then
-            return false
-        end
-    end, "coop_no_white_king_target")
-
-    -- Log unexpected native moves. A prepend callback cannot cancel the
-    -- original move_piece call, so occupancy is enforced in the manual input
-    -- path and by keeping this piece's native target lists empty.
-    prepend("move_piece", function(piece, destination, ...)
-        if is_coop_active() and piece and piece.team == 1 and _log then
-            _log("[COOP WHITE MOVE] enter type=" .. coop_string(piece.type)
-                .. " from=" .. coop_trace_value(piece.sq)
-                .. " to=" .. coop_trace_value(destination)
-                .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq)
-                .. " source_occupant=" .. coop_trace_value(piece.sq and piece.sq.p)
-                .. " target_occupant=" .. coop_trace_value(destination and destination.p)
-                .. " source_is_piece=" .. coop_string(piece.sq and piece.sq.p == piece)
-                .. " target_is_board_sq=" .. coop_string(destination and destination.px ~= nil
-                    and destination.py ~= nil))
-        end
-        if is_coop_active() and piece == hero and _log then
-            _log("[COOP KING PIECE MOVE] enter destination=" .. coop_trace_value(destination)
-                .. " origin=" .. coop_trace_value(hero.sq))
-        end
-        if mode and mode.id == "coop" and piece == mode.coop_knight
-            and destination and destination.piece then
-            if _log then
-                _log("[COOP GUARD] rejected Knight move onto occupied square="
-                    .. coop_trace_value(destination)
-                    .. " occupant=" .. coop_trace_value(destination.piece))
-            end
-            return true
-        end
-        if mode and mode.id == "coop" and coop_call_targets_white_king(piece, destination, ...) then
-            return true
-        end
-        if mode and mode.id == "coop" and piece and piece.team == 1
-            and mode.coop_knight and destination == mode.coop_knight.sq then
-            -- Remember the victim before the native capture clears its square.
-            mode.coop_knight_capture_square = destination
-        end
-    end, "coop_no_white_king_move")
-
-    -- A white King move has occasionally failed inside the native move
-    -- wrapper. Mark whether it reached the lower-level square transition.
-    prepend("goto_sq", function(piece, destination)
-        if is_coop_active() and coop_is_white_king(piece) and _log then
-            _log("[COOP WHITE GOTO] enter from=" .. coop_trace_value(piece.sq)
-                .. " to=" .. coop_trace_value(destination)
-                .. " source_occupant=" .. coop_trace_value(piece.sq and piece.sq.p)
-                .. " target_occupant=" .. coop_trace_value(destination and destination.p))
-        end
-    end, "coop_white_king_goto_trace_enter")
-
-    append("goto_sq", function(piece, destination)
-        if is_coop_active() and coop_is_white_king(piece) and _log then
-            _log("[COOP WHITE GOTO] returned current=" .. coop_trace_value(piece.sq)
-                .. " target=" .. coop_trace_value(destination))
-        end
-    end, "coop_white_king_goto_trace_return")
-
-    -- Guard explicit move_hero calls. Board clicks are validated and consumed
-    -- in the _update hook below because a prepend return value cannot cancel
-    -- the game's original input handler.
-    prepend("move_hero", function(destination)
-        if is_coop_active() and mode.coop_selected == "king"
-            and destination and not coop_piece_on_square(destination) then
-            mode.coop_duet_king_window = nil
-        end
-        if is_coop_active() and mode.coop_selected == "king" and _log then
-            _log("[COOP KING MOVE] enter destination=" .. coop_trace_value(destination)
-                .. " origin=" .. coop_trace_value(hero and hero.sq)
-                .. " penta=" .. coop_string(destination and destination.penta)
-                .. " pentagram=" .. coop_string(destination and destination.pentagram)
-                .. " extra_turn=" .. coop_string(mode.extra_turn)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " black_actions=" .. coop_string(mode.black_actions))
-        end
-        if is_coop_active() and mode.coop_selected == "king" then
-            mode.coop_penta_move_target = destination and destination.penta == true
-                and destination or nil
-        end
-        if not mode or mode.id ~= "coop" or mode.coop_selected ~= "knight"
-            or not mode.coop_knight then return end
-        local knight = mode.coop_knight
-        for _, sq in ipairs(coop_get_knight_move_targets(knight)) do
-            if sq == destination and knight.ready ~= false then
-                mode.coop_knight_move_origin_sq = knight.sq
-                return
-            end
-        end
-        if _log then
-            _log("[COOP INPUT] blocked non-move Knight target=" .. coop_trace_value(destination))
-        end
-        return true
-    end, "coop_knight_validate_native_move")
-
-    append("move_hero", function(destination)
-        if is_coop_active() and mode.coop_selected == "king" then
-            if destination and hero.sq == destination then
-                coop_break_king_barricade()
-            end
-            mode.coop_penta_bonus_pending = mode.coop_penta_move_target == destination
-                and hero.sq == destination
-            mode.coop_penta_move_target = nil
-            -- The native movement button can accept another click while the
-            -- enemy phase and next-turn UI are still being assembled.
-            if destination and hero.sq == destination then
-                mode.coop_king_move_input_locked = true
-                mode.coop_extra_king_action_pending = nil
-                mode.coop_king_post_move_idle_frames = 0
-            end
-        end
-        if is_coop_active() and mode.coop_selected == "king" and _log then
-            _log("[COOP KING MOVE] returned destination=" .. coop_trace_value(destination)
-                .. " current=" .. coop_trace_value(hero and hero.sq)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " black_actions=" .. coop_string(mode.black_actions))
-        end
-        if not mode or mode.id ~= "coop" or mode.coop_selected ~= "knight"
-            or not mode.coop_knight then return end
-        local knight = mode.coop_knight
-        local origin = mode.coop_knight_move_origin_sq
-        if origin and knight.sq ~= origin and knight.sq == destination then
-            coop_finish_knight_move(knight, destination)
-        end
-    end, "coop_knight_finish_native_move")
-
-    append("move_piece", function(piece, destination)
-        if not is_coop_active() then return end
-        if piece and piece.team == 1 then
-            -- Native move_piece updates sq before the white piece finishes
-            -- tweening on screen. Track the actual movement when the engine
-            -- exposes in_move; the frame limit remains a fallback.
-            mode.coop_white_move_grace_frames = 30
-            mode.coop_white_move_tracking = mode.coop_white_move_tracking or {}
-            mode.coop_white_move_tracking[#mode.coop_white_move_tracking + 1] = {
-                piece = piece, seen_in_move = not not piece.in_move,
-            }
-        end
-        if piece and piece.team == 1 and _log then
-            _log("[COOP WHITE MOVE] returned type=" .. coop_string(piece.type)
-                .. " current=" .. coop_trace_value(piece.sq)
-                .. " destination=" .. coop_trace_value(destination)
-                .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq))
-        end
-        if piece == hero and _log then
-            _log("[COOP KING PIECE MOVE] returned destination=" .. coop_trace_value(destination)
-                .. " current=" .. coop_trace_value(hero.sq))
-        end
-        local knight = mode.coop_knight
-        if piece and piece.team == 1 and knight and destination
-            and (destination == knight.sq or destination == mode.coop_knight_capture_square) then
-            if _log then
-                _log("[COOP GUARD] enemy captured Knight on " .. coop_trace_value(destination))
-            end
-            coop_mark_knight_dead(knight)
-        end
-        mode.coop_knight_capture_square = nil
-        if piece == mode.coop_knight then
-            if destination and destination.piece and destination.piece ~= piece then
-                if _log then
-                    _log("[COOP GUARD] Knight move ended on occupied square="
-                        .. coop_trace_value(destination)
-                        .. " occupant=" .. coop_trace_value(destination.piece))
-                end
-                coop_mark_knight_dead(piece)
-            end
-        elseif piece ~= hero and piece ~= mode.coop_king_hero then
-            return
-        end
-        if piece == knight and mode.coop_selected == "knight"
-            and destination == knight.sq then
-            if coop_finish_knight_move(knight, destination) and _log then
-                _log("[COOP INPUT] native Knight move committed; selected=king")
-            end
-        end
-    end, "coop_move_piece_after")
-
-    -- Resolve the charge before opp_turn snapshots attackers and queues their
-    -- callbacks. opp_move is later: pruning danger there cannot cancel an
-    -- attack that opp_turn has already scheduled against the King.
-    prepend("opp_turn", function()
-        if not is_coop_active() then return end
-        if mode.coop_selected == "knight" then coop_set_selected("king") end
-        if mode.coop_knight_charge and _log then
-            _log("[COOP CHARGE] resolve before native enemy attack scheduling")
-        end
-        coop_resolve_knight_charge()
-    end, "coop_charge_before_enemy_attacks")
-
-    -- The engine's enemy turn assumes `hero` is the real King. Restore it
-    -- before enemy targeting/damage code runs, even if the Knight was selected
-    -- but did not finish an action before the phase advanced.
-    prepend("opp_move", function()
-        if mode and mode.id == "coop" then mode.coop_duet_king_window = nil end
-        if is_coop_active() and _log then
-            _log("[COOP WHITE PHASE] enter floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " events=" .. coop_string(type(events) == "table" and #events or nil)
-                .. " knight=" .. coop_trace_value(mode.coop_knight and mode.coop_knight.sq))
-        end
-        -- Resolve the warrant only when the King's action ends the shared
-        -- round, alongside the enemy damage phase, never on the Knight click.
-        if mode and mode.id == "coop" then coop_resolve_warrant_knight_check() end
-        if mode and mode.id == "coop" then coop_finish_grindstone_turn() end
-        if mode and mode.id == "coop" and mode.coop_selected == "knight" then
-            coop_set_selected("king")
-            if _log then _log("[COOP INPUT] restored King before enemy phase") end
-        end
-    end, "coop_restore_king_before_enemy_phase")
-
-    append("opp_move", function()
-        if is_coop_active() and _log then
-            _log("[COOP WHITE PHASE] returned floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " events=" .. coop_string(type(events) == "table" and #events or nil))
-        end
-    end, "coop_white_phase_return_trace")
-
-    -- Two-action turn gate: one native turn carries King and Knight actions
-    prepend("new_turn", function()
-        if not mode or mode.id ~= "coop" then return end
-        -- The coop interceptor can skip the first native new_turn call. The
-        -- base mode normally initializes ai_lvl there, but during a floor
-        -- transition the king may not have a square yet. Seed it before the
-        -- native new_turn arithmetic even in that short inactive window.
-        if mode.ai_lvl == nil then mode.ai_lvl = mode.lvl or 0 end
-        if not is_coop_active() then return end
-        if mode.coop_king_move_input_locked and mode.coop_selected == "king" then
-            mode.coop_locked_new_turn_origin = mode.turns
-        else
-            mode.coop_locked_new_turn_origin = nil
-        end
-        if _log then
-            _log("[COOP ROUND PROBE] new_turn before knight="
-                .. coop_string(mode.coop_knight ~= nil)
-                .. " selected=" .. coop_string(mode.coop_selected)
-                .. " turns=" .. coop_string(mode.turns)
-                .. " black_actions=" .. coop_string(mode.black_actions))
-        end
-        if coop_floor_is_ending() then
-            -- The Knight's blade does not use the King's action controller.
-            -- Keep allowing native turns until on_empty completes the floor.
-            -- Clearing this after one call made each later surrender turn
-            -- look like a fresh 2P action and repeatedly suppressed it.
-            mode.coop_surrender_input_locked = true
-            mode.black_actions = 0
-            return
-        end
-        if mode.coop_opening_king_turn and mode.black_actions == 1 then
-            mode.coop_opening_king_turn = false
-            mode.black_actions = mode.coop_penta_bonus_pending and 1 or 0
-            mode.coop_penta_bonus_pending = nil
-            if _log then _log("[COOP ROUND] opening King action advances native turn") end
-            return
-        end
-        if not mode.coop_knight then
-            if _log then _log("[COOP ROUND PROBE] new_turn allow reason=no_knight") end
-            return
-        end
-
-        mode.black_actions = mode.black_actions + 1
-        if mode.black_actions == 1 then
-            if _log then _log("[COOP ROUND PROBE] new_turn suppress native advance") end
-            return true
-        else
-            if _log then _log("[COOP ROUND PROBE] new_turn allow native advance") end
-            if mode.coop_penta_bonus_pending then
-                -- The original game skips the white phase and keeps the King
-                -- active after a pentagram move. Its extra King action must
-                -- still finish this shared round on the next new_turn call.
-                mode.black_actions = 1
-                if _log then _log("[COOP ROUND] pentagram granted extra King action") end
-            else
-                mode.black_actions = 0
-            end
-            mode.coop_penta_bonus_pending = nil
-        end
-    end, "coop_new_turn_intercept")
-
-    append("new_turn", function()
-        if is_coop_active() and mode.coop_king_move_input_locked
-            and mode.coop_selected == "king"
-            and not mode.coop_native_turn_in_progress
-            and mode.coop_locked_new_turn_origin == mode.turns
-            and not coop_floor_is_ending() then
-            -- Native bonus actions (including Undercover Mission) return
-            -- from new_turn without init_new_turn. The normal turn-start
-            -- callback therefore cannot release the rapid-click guard.
-            mode.coop_extra_king_action_pending = 2
-            -- The Knight and King's regular actions are already complete.
-            -- Count the bonus King action as the final action on its next
-            -- new_turn call, as the pentagram path does.
-            mode.black_actions = 1
-            if _log then
-                _log("[COOP ROUND] native same-turn King bonus; release click lock when settled")
-            end
-        end
-        if mode and mode.id == "coop" then mode.coop_locked_new_turn_origin = nil end
-        if is_coop_active() and _log then
-            _log("[COOP ROUND PROBE] new_turn returned floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " events=" .. coop_string(type(events) == "table" and #events or nil))
-        end
-    end, "coop_new_turn_return_trace")
-
-    -- The base game hides the OS pointer from draw_game() every frame. Keep it
-    -- visible while 2P is selected; this does not touch the game's own aim UI.
-    append("mouse", function(command, enabled)
-        if not is_coop_active() or mode.coop_selected ~= "knight"
-            or mode.coop_pause_menu_open or (mode.coop_menu_click_grace or 0) > 0
-            or command ~= "show" or enabled ~= false or mode.coop_force_os_cursor then
-            return
-        end
-        mode.coop_force_os_cursor = true
-        mouse("show", true)
-        mode.coop_force_os_cursor = false
-    end, "coop_knight_show_os_cursor")
-
-    -- Do not alter hero or square data for these previews. Restrict the native
-    -- cursor renderers to a single pixel while Knight control is active.
-    local coop_preview_clip_depth = 0
-    local coop_preview_clip_calls = {}
-    local coop_movemap_trace_count = 0
-    local coop_movemap_exit_trace_count = 0
-    local function coop_begin_preview_clip(kind)
-        local stack = coop_preview_clip_calls[kind]
-        if not stack then
-            stack = {}
-            coop_preview_clip_calls[kind] = stack
-        end
-        stack[#stack + 1] = false
-        if not mode or not is_coop_active() or mode.coop_selected ~= "knight"
-            or type(clip) ~= "function" then
-            return
-        end
-        stack[#stack] = true
-        if coop_preview_clip_depth == 0 then clip(0, 0, 1, 1) end
-        coop_preview_clip_depth = coop_preview_clip_depth + 1
-        if kind == "dr_movemap" and _log and coop_movemap_trace_count < 8 then
-            coop_movemap_trace_count = coop_movemap_trace_count + 1
-            _log("[COOP CURSOR TRACE] movemap enter floor=" .. coop_string(mode.lvl)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " depth=" .. coop_string(coop_preview_clip_depth))
-        end
-        if _log and not mode["coop_logged_clip_" .. kind] then
-            mode["coop_logged_clip_" .. kind] = true
-            _log("[COOP CURSOR] clipped native " .. kind)
-        end
-    end
-
-    local function coop_end_preview_clip(kind)
-        local stack = coop_preview_clip_calls[kind]
-        if not stack or #stack == 0 then return end
-        local saved = stack[#stack]
-        stack[#stack] = nil
-        if not saved then return end
-        coop_preview_clip_depth = max(0, coop_preview_clip_depth - 1)
-        -- SUGAR clip() resets clipping to the full drawing area. The renderer
-        -- runs without a narrower clip here; do not assume clip() returns state.
-        if coop_preview_clip_depth == 0 then clip() end
-        if kind == "dr_movemap" and _log and coop_movemap_exit_trace_count < 8 then
-            coop_movemap_exit_trace_count = coop_movemap_exit_trace_count + 1
-            _log("[COOP CURSOR TRACE] movemap exit floor=" .. coop_string(mode and mode.lvl)
-                .. " turn=" .. coop_string(mode and mode.turns)
-                .. " depth=" .. coop_string(coop_preview_clip_depth))
-        end
-    end
-
-    local function coop_clip_preview_hook(kind)
-        prepend(kind, function()
-            coop_begin_preview_clip(kind)
-        end, "coop_clip_preview_before_" .. kind)
-        append(kind, function()
-            coop_end_preview_clip(kind)
-        end, "coop_clip_preview_after_" .. kind)
-    end
-    -- Keep the native crosshair and King movement-map drawing clipped while
-    -- 2P Knight is selected. Knight movement is handled by the coop input path.
-    coop_clip_preview_hook("dr_crosshair")
-    coop_clip_preview_hook("dr_movemap")
-
-    -- The native movement arrow follows the mouse over an empty King move
-    -- square. Preserve native coordinates over other occupied squares so the
-    -- game's normal piece details panel can still respond to hover in Knight
-    -- mode. The co-op Knight itself must not get a native pickup/status hover.
-    -- Soul hover must also be handled by the Knight preview: its native hover
-    -- callback calculates the King's soul range. Knight controls use separate
-    -- m:x/m:y bindings below. Menus retain native coordinates.
-    prepend("_update", function()
-        if not is_coop_active() then return end
-        if not mode.coop_pause_menu_open and btnp("coop_mouse_probe", 0) then
-            local mx = btnv("coop_mouse_x_probe", 0)
-            local my = btnv("coop_mouse_y_probe", 0)
-            if coop_mechanism_icon_at(mx, my)
-                and has_card and has_card("Co-op Mechanism Order") then
-                btnclr()
-                coop_activate_mechanism_order()
-                return true
-            end
-        end
-        if mode.coop_selected == "king" and hero and hero.sq
-            and mode.coop_knight_killed_attack_squares
-            and mode.coop_knight_killed_attack_squares[hero.sq] then
-            -- Shooting may still see cached danger from the killed piece
-            -- until the next white turn. Keep all living attackers intact.
-            local removed = coop_prune_dead_attackers(hero.sq)
-            if removed > 0 and _log then
-                _log("[COOP KILL UI] pruned dead danger before King input="
-                    .. coop_string(removed))
-            end
-        end
-        if coop_floor_is_ending() then
-            -- The board can remain clickable during surrender and after
-            -- on_empty. Never dispatch a Knight action into that old board.
-            if not mode.coop_floor_transition then
-                mode.coop_surrender_input_locked = true
-                coop_lock_surrender_controls()
-            end
-            return
-        end
-        -- Undercover Mission pauses after the King lands and waits for a
-        -- disruption choice. Its choices are drawn over the board but are not
-        -- all regular buttons, so the post-move board guard must eventually
-        -- pass their clicks to the native selector. Ordinary move animations
-        -- and queued events keep the guard active.
-        local waiting_for_disruption_choice = mode.coop_king_move_input_locked
-            and mode.coop_selected == "king"
-            and not mode.coop_manual_king_enemy_turn_pending
-            and type(has_card) == "function" and has_card("Undercover Mission")
-            and not (hero and hero.in_move)
-            and not mode.coop_native_turn_in_progress
-            and not mode.coop_auto_select_knight_pending
-            and not mode.coop_penta_bonus_pending
-            and not mode.coop_extra_king_action_pending
-            and not mode.coop_pause_menu_open
-            and (type(events) ~= "table" or #events == 0)
-        if waiting_for_disruption_choice then
-            mode.coop_king_post_move_idle_frames =
-                (mode.coop_king_post_move_idle_frames or 0) + 1
-        else
-            mode.coop_king_post_move_idle_frames = 0
-        end
-        coop_sync_knight_soul_hover()
-        if coop_white_move_animation_pending()
-            and (mode.coop_auto_select_knight_pending
-                or mode.coop_selected == "knight")
-            and btnp("coop_mouse_probe", 0) then
-            local mx = btnv("coop_mouse_x_probe", 0)
-            local my = btnv("coop_mouse_y_probe", 0)
-            if coop_get_square_at_mouse(mx, my) then
-                btnclr()
-                return true
-            end
-        end
-        if mode.coop_selected == "knight" and mode.coop_knight
-            and not mode.coop_pause_menu_open
-            and (mode.coop_menu_click_grace or 0) <= 0 then
-            local mouse_x = btnv("coop_mouse_x_probe", 0)
-            local mouse_y = btnv("coop_mouse_y_probe", 0)
-            local hover_square = coop_get_square_at_mouse(mouse_x, mouse_y)
-            if not (hover_square and hover_square ~= mode.coop_knight.sq
-                and coop_piece_on_square(hover_square)) then
-                btnclr("mx", 0)
-                btnclr("my", 0)
-            end
-        end
-        -- Knight cancellation owns this press. A prepend return value does
-        -- not stop native input: consume it before Scope/other King skills
-        -- can see the same right-click. btnclr also blocks held bindings
-        -- until release, including a press held across a character switch.
-        if mode.coop_selected == "knight" and mode.coop_knight
-            and not mode.coop_pause_menu_open
-            and (mode.coop_menu_click_grace or 0) <= 0
-            and btnp("coop_right_probe", 0) then
-            coop_cancel_knight_soul()
-            btnclr()
-            return true
-        end
-        if not btnp("coop_mouse_probe", 0) then return end
-        -- Menu state is set by the native open/resume callbacks above. The
-        -- old pause-key toggle drifted while Escape was held and could swallow
-        -- the next Knight click after the native menu had already closed.
-        local menu_click_grace = (mode.coop_menu_click_grace or 0) > 0
-        if mode.coop_pause_menu_open or menu_click_grace then
-            if _log then
-                _log("[COOP UI] click passed to native menu flag="
-                    .. coop_string(mode.coop_pause_menu_open)
-                    .. " grace=" .. coop_string(mode.coop_menu_click_grace))
-            end
-            mode.coop_menu_click_grace = 0
-            return
-        end
-        if coop_controller and not coop_controller.owns_input() then btnclr(); return end
-        local click_x = btnv("coop_mouse_x_probe", 0)
-        local click_y = btnv("coop_mouse_y_probe", 0)
-        -- Native disruption options cover the board; their clicks belong to
-        -- the modal even while the King's movement continuation is suspended.
-        if disrupt_menu then return end
-        if coop_controller and coop_controller.native_choice_waiting
-            and coop_controller.native_choice_waiting() then return end
-        if waiting_for_disruption_choice
-            and mode.coop_king_post_move_idle_frames >= 15 then
-            if _log then _log("[COOP UI] passed waiting disruption choice click") end
-            return
-        end
-        if mode.coop_selected == "king"
-            and mode.coop_king_move_input_locked
-            and coop_native_menu_button_at(click_x, click_y) then
-            if _log then _log("[COOP UI] passed native choice button click") end
-            return
-        end
-        if mode.coop_king_move_input_locked
-            and coop_get_square_at_mouse(click_x, click_y) then
-            btnclr()
-            if _log then
-                _log("[COOP INPUT] blocked King click during turn transition"
-                    .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
-                    .. " moving=" .. coop_string(hero and hero.in_move)
-                    .. " events=" .. coop_string(type(events) == "table" and #events or nil))
-            end
-            return true
-        end
-        if mode.coop_selected == "king" and mode.coop_knight_killed_square then
-            local clicked = coop_get_square_at_mouse(click_x, click_y)
-            local killed_square = clicked and mode.coop_knight_killed_squares
-                and mode.coop_knight_killed_squares[clicked]
-            local affected = clicked and (killed_square
-                or (mode.coop_knight_killed_attack_squares
-                    and mode.coop_knight_killed_attack_squares[clicked]))
-            local legal_move = killed_square
-                and coop_king_can_enter_killed_square(clicked)
-                or (clicked and is_free(clicked)
-                    and not coop_piece_on_square(clicked)
-                    and coop_king_destination_in_range(clicked))
-            if affected and legal_move then
-                local live_attack = coop_live_white_attacks_square(clicked)
-                if killed_square or not live_attack then
-                    -- Native buttons may still use the victim's pre-kill map.
-                    -- Submit this legal King move once, checking refreshed
-                    -- native danger (including projectiles and special attacks).
-                    btnclr()
-                    if type(check_folly_shields) == "function"
-                        and check_folly_shields(clicked) then
-                        if _log then _log("[COOP KILL UI] live attack blocked King move") end
-                        return true
-                    end
-                    mode.coop_manual_king_origin_sq = hero.sq
-                    mode.coop_manual_king_turn_pending = clicked
-                    mode.coop_manual_king_turn_frames = 60
-                    if _log then
-                        _log("[COOP KILL UI] King move through stale target="
-                            .. coop_trace_value(clicked)
-                            .. " live_attack=" .. coop_string(live_attack))
-                    end
-                    move_hero(clicked)
-                    return true
-                end
-            end
-            if killed_square and _log then
-                _log("[COOP KILL UI] dead square click rejected legal="
-                    .. coop_string(legal_move)
-                    .. " free=" .. coop_string(is_free(clicked))
-                    .. " piece=" .. coop_trace_value(coop_piece_on_square(clicked)))
-            end
-        end
-        coop_refresh_spent_souls()
-        if mode.coop_selected == "king" then
-            coop_note_ritual_dagger_click(click_x, click_y)
-        end
-        if coop_joust_blocks_shot() then
-            local clicked_square = coop_get_square_at_mouse(click_x, click_y)
-            if clicked_square and not coop_joust_allows_king_action(clicked_square) then
-                btnclr()
-                if _log then
-                    _log("[COOP JOUST] blocked King shot at "
-                        .. coop_trace_value(clicked_square))
-                end
-                return true
-            end
-        end
-        if mode.coop_selected == "king" and mode.coop_knight
-            and mode.coop_knight.sq
-            and coop_get_square_at_mouse(click_x, click_y) == mode.coop_knight.sq then
-            -- The King's native range can still contain a square occupied by
-            -- a Knight revived after that range was calculated.
-            btnclr()
-            if _log then _log("[COOP GUARD] King move onto Knight square blocked") end
-            return true
-        end
-        if mode.coop_selected == "king" and mode.coop_knight
-            -- activate_soul creates fresh native buttons, including the
-            -- vacated square. Preserve their range, shield and landing callback.
-            and not (hero and hero.soul ~= nil)
-            and mode.coop_last_knight_origin_sq
-            and mode.coop_last_knight_destination_sq then
-            local clicked_square = coop_get_square_at_mouse(click_x, click_y)
-            local old_square = mode.coop_last_knight_origin_sq
-            local new_square = mode.coop_last_knight_destination_sq
-            if clicked_square == old_square or clicked_square == new_square then
-                -- The native click buttons still point at the Knight's old
-                -- square after its independent jump. Use the current board
-                -- state for these two squares instead of that stale button.
-                btnclr()
-                local legal_king_move = false
-                local range_length = nil
-                local range_preview = {}
-                if clicked_square == old_square and hero and hero.sq
-                    and is_free(old_square) and get_range then
-                    local range = get_range(hero)
-                    if type(range) == "table" then
-                        range_length = #range
-                        for index, entry in ipairs(range) do
-                            if index <= 8 then add(range_preview, coop_trace_value(entry)) end
-                            if coop_as_square(entry) == old_square then
-                                legal_king_move = true
-                                break
-                            end
-                        end
-                    end
-                end
-                if _log then
-                    _log("[COOP KING GHOST CLICK] square=" .. coop_trace_value(clicked_square)
-                        .. " origin=" .. coop_string(clicked_square == old_square)
-                        .. " destination=" .. coop_string(clicked_square == new_square)
-                        .. " legal_king_move=" .. coop_string(legal_king_move)
-                        .. " hero_ready=" .. coop_string(hero and hero.ready)
-                        .. " range_length=" .. coop_string(range_length)
-                        .. " range_preview=" .. coop_join(range_preview, "/")
-                        .. " free=" .. coop_string(is_free(clicked_square)))
-                end
-                -- The old-square button bypasses the native King's click
-                -- handler. Run its Folly Shield check only on an actual move
-                -- click, leaving the movement arrow visible as in vanilla.
-                if legal_king_move and type(check_folly_shields) == "function"
-                    and check_folly_shields(old_square) then
-                    if _log then _log("[COOP KING GHOST CLICK] blocked by Folly Shield") end
-                    return true
-                end
-                if legal_king_move and move_hero then
-                    mode.coop_manual_king_origin_sq = hero.sq
-                    mode.coop_manual_king_turn_pending = old_square
-                    mode.coop_manual_king_turn_frames = 60
-                    -- Hide the temporary arrow as soon as this move is
-                    -- committed. The turn's normal button cleanup follows
-                    -- after the movement animation finishes.
-                    coop_mute_stale_knight_pickup(false)
-                    move_hero(old_square)
-                end
-                return true
-            end
-        end
-        if mode.coop_selected == "king" then
-            coop_duet_begin_king_action(coop_get_square_at_mouse(click_x, click_y))
-        end
-        if mode.coop_selected == "knight" and mode.coop_knight then
-            local knight = mode.coop_knight
-            local move_targets = coop_get_knight_input_targets(knight)
-            local coordinate_target = coop_get_square_at_mouse(click_x, click_y)
-            local native_target, native_target_source = coop_find_mouse_target(move_targets)
-            local target = coordinate_target
-            local target_is_legal = false
-            local blade_available = not coop_knight_soul_ready(knight)
-            local coordinate_target_is_actionable = coordinate_target
-                and blade_available
-                and coop_knight_can_attack_target(knight, coordinate_target) or false
-            local native_target_is_actionable = false
-            if coordinate_target then
-                for _, sq in ipairs(move_targets) do
-                    if sq == coordinate_target then
-                        coordinate_target_is_actionable = true
-                        break
-                    end
-                end
-            end
-            if native_target then
-                for _, sq in ipairs(move_targets) do
-                    if sq == native_target then
-                        native_target_is_actionable = true
-                        break
-                    end
-                end
-                if blade_available and not native_target_is_actionable
-                    and coop_knight_can_attack_target(knight, native_target) then
-                    native_target_is_actionable = true
-                end
-            end
-            -- A click on a visible Knight destination or adjacent enemy must
-            -- keep that square. The native helper may still resolve a King
-            -- button left under the pointer and redirect the Knight's action.
-            if native_target_is_actionable and not coordinate_target_is_actionable then
-                target = native_target
-            end
-            for _, sq in ipairs(move_targets) do
-                if sq == target then target_is_legal = true break end
-            end
-            local board_left, board_top = coop_get_board_geometry()
-            local board_click = native_target_is_actionable
-                or (click_x >= board_left and click_x < board_left + 128
-                    and click_y >= board_top and click_y < board_top + 128)
-
-            -- Handle the new cards before the native soul button runs. Native
-            -- activation gives the movement pattern to hero (the King), not
-            -- to the independently controlled 2P Knight.
-            local soul_button = coop_get_soul_button_at(click_x, click_y)
-            if soul_button then
-                local soul = coop_find_soul_for_button(soul_button)
-                if coop_select_knight_soul(soul) then
-                    btnclr()
-                    if _log then _log("[COOP SOUL] selected for Knight id=" .. coop_string(soul.id)) end
-                    return true
-                end
-                if _log and not soul then
-                    _log("[COOP SOUL] could not resolve button descriptor x="
-                        .. coop_string(soul_button.x) .. " y=" .. coop_string(soul_button.y))
-                end
-                return
-            end
-
-            -- `prepend` callbacks cannot cancel the base game's handler.
-            -- Consume every left click while the Knight is selected: clicks
-            -- outside the board still reach the native fire handler otherwise.
-            -- Pause/menu clicks have already been passed through above.
-            btnclr()
-
-            if board_click and target and coop_knight_soul_ready(knight)
-                and mode.coop_knight_selected_soul.id == 1 then
-                coop_anchor_knight_charge(knight, target)
-                return true
-            end
-
-            if coop_perform_knight_action(knight, target, {
-                board_click=board_click, target_is_legal=target_is_legal,
-                click_x=click_x, click_y=click_y, native_target=native_target,
-                native_target_source=native_target_source, coordinate_target=coordinate_target,
-                native_target_is_actionable=native_target_is_actionable
-            }) then return true end
-
-            if _log then
-                _log("[COOP INPUT] click target=" .. coop_trace_value(target)
-                    .. " board_click=" .. coop_string(board_click)
-                    .. " legal_move=" .. coop_string(target_is_legal)
-                    .. " native_target=" .. coop_trace_value(native_target)
-                    .. " target_api=" .. coop_string(native_target_source)
-                    .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
-                    .. " board_left=" .. coop_string(board_left)
-                    .. " board_top=" .. coop_string(board_top)
-                    .. " MCW=" .. coop_string(MCW)
-                    .. " board_y=" .. coop_string(board_y)
-                    .. " target_source=board_coordinates")
-            end
-            return true
-        end
-        if _log then
-            _log("[COOP INPUT CLICK] selected=" .. coop_string(mode.coop_selected)
-                .. " mouse=" .. coop_string(click_x)
-                .. "," .. coop_string(click_y)
-                .. " king=" .. coop_trace_value(mode.coop_king_hero or hero)
-                .. " knight=" .. coop_trace_value(mode.coop_knight))
-        end
-    end, "coop_board_click_guard")
-    append("_update", function()
-        if not mode or mode.id ~= "coop" then return end
-        if mode.coop_king_kill_pending_floor then
-            if mode.coop_floor_transition or mode.lvl ~= mode.coop_king_kill_pending_floor then
-                mode.coop_king_kill_pending_floor = nil
-                mode.coop_king_kill_pending_frames = nil
-            else
-                mode.coop_king_kill_pending_frames = mode.coop_king_kill_pending_frames - 1
-                if mode.coop_king_kill_pending_frames <= 0 then
-                    mode.coop_king_kill_pending_floor = nil
-                    mode.coop_king_kill_pending_frames = nil
-                    mode.coop_force_king_kill_turn = true
-                    if _log then _log("[COOP WIN] advance native turn for white King surrender") end
-                    new_turn()
-                    coop_lock_surrender_controls()
-                end
-            end
-        end
-        local pending = mode.coop_manual_king_turn_pending
-        if pending then
-            mode.coop_manual_king_turn_frames = (mode.coop_manual_king_turn_frames or 1) - 1
-            if hero and hero.sq == pending and not hero.in_move then
-                mode.coop_manual_king_turn_pending = nil
-                mode.coop_manual_king_turn_frames = nil
-                if _log then _log("[COOP KING GHOST MOVE] committed; starting enemy turn") end
-                if remove_buts then
-                    -- The manual move bypasses the normal King controller's
-                    -- button cleanup. Clear its old square controls before
-                    -- the native white phase rebuilds the next turn's controls.
-                    remove_buts()
-                end
-                -- The native enemy turn checks ready attacks before moving
-                -- white pieces. Calling opp_move directly skipped those
-                -- attacks when the King entered a threatened old square.
-                mode.coop_manual_king_enemy_turn_pending = {
-                    turn = mode.turns,
-                    frames = 0,
-                }
-                -- opp_turn owns the completion callback, including white
-                -- movement animations not represented in the events table.
-                opp_turn()
-                return
-            elseif mode.coop_manual_king_turn_frames <= 0 then
-                if _log then _log("[COOP KING GHOST MOVE] not committed; turn unchanged") end
-                mode.coop_manual_king_turn_pending = nil
-                mode.coop_manual_king_turn_frames = nil
-            end
-        end
-        local manual_enemy_turn = mode.coop_manual_king_enemy_turn_pending
-        if manual_enemy_turn then
-            if mode.turns ~= manual_enemy_turn.turn or coop_floor_is_ending() then
-                mode.coop_manual_king_enemy_turn_pending = nil
-            else
-                -- opp_turn() can return without advancing the turn when the King
-                -- ends its extra action on the square of the Knight it just
-                -- killed, so the turn stamp never changes and this handshake
-                -- waits forever. Re-issue the enemy turn instead of skipping it.
-                manual_enemy_turn.frames = (manual_enemy_turn.frames or 0) + 1
-                if manual_enemy_turn.frames >= 45
-                    and not coop_white_move_animation_pending()
-                    and not mode.coop_native_turn_in_progress
-                    and not mode.coop_pause_menu_open
-                    and (not hero or not hero.in_move)
-                    and (type(events) ~= "table" or #events == 0) then
-                    mode.coop_manual_king_enemy_turn_pending = nil
-                    if _log then
-                        _log("[COOP UNSTICK] enemy turn did not advance; re-issuing"
-                            .." floor=" .. coop_string(mode.lvl)
-                            .. " turn=" .. coop_string(mode.turns))
-                    end
-                    if type(new_turn) == "function" then new_turn() end
-                end
-            end
-        end
-        -- Refresh the native cursor once after switching control.
-        if mode.coop_cursor_refresh_pending and not mode.coop_surrender_input_locked
-            and not coop_white_move_animation_pending()
-            and reset_move_cursor and hero and hero.sq then
-            reset_move_cursor()
-            mode.coop_cursor_refresh_pending = false
-            coop_mute_king_button_on_knight_square()
-            if _log then
-                _log("[COOP CURSOR] refreshed after selection=" .. coop_string(mode.coop_selected))
-            end
-            if mode.coop_pickup_cleanup_pending then
-                mode.coop_pickup_cleanup_pending = nil
-                coop_mute_stale_knight_pickup(true)
-            end
-        end
-        if mode.coop_killed_button_refresh_pending
-            and coop_mute_dead_victim_button() then
-            mode.coop_killed_button_refresh_pending = nil
-        end
-        if mode.coop_menu_click_grace and mode.coop_menu_click_grace > 0 then
-            mode.coop_menu_click_grace = mode.coop_menu_click_grace - 1
-        end
-    end, "coop_menu_click_grace")
-    append("_update", function()
-        if not is_coop_active() then return end
-        if coop_floor_is_ending() then
-            mode.coop_auto_select_knight_pending = nil
-            if mode.coop_knight then mode.coop_knight.ready = false end
-            return
-        end
-        if (mode.coop_white_move_grace_frames or 0) > 0
-            and not mode.coop_pause_menu_open
-            and (type(events) ~= "table" or #events == 0) then
-            local tracked = mode.coop_white_move_tracking
-            local all_finished = tracked and #tracked > 0
-            if all_finished then
-                for _, movement in ipairs(tracked) do
-                    if movement.piece and movement.piece.in_move then
-                        movement.seen_in_move = true
-                    end
-                    if not movement.seen_in_move
-                        or (movement.piece and movement.piece.in_move) then
-                        all_finished = false
-                    end
-                end
-            end
-            -- A completed native movement needs only two quiet frames before
-            -- switching control. Unobserved movements retain the 30-frame
-            -- fallback, so early clicks cannot race their animation.
-            if all_finished and mode.coop_white_move_grace_frames > 2 then
-                if _log then
-                    _log("[COOP TURN TRACE] white movement settled; release Knight selection early"
-                        .. " floor=" .. coop_string(mode.lvl)
-                        .. " turn=" .. coop_string(mode.turns))
-                end
-                mode.coop_white_move_grace_frames = 2
-            end
-            mode.coop_white_move_grace_frames = mode.coop_white_move_grace_frames - 1
-            if mode.coop_white_move_grace_frames <= 0 then
-                mode.coop_white_move_tracking = nil
-            end
-        end
-        -- Spent soul buttons are refreshed when the card is consumed, a slot
-        -- is refilled, or the player clicks. Polling the native button tree on
-        -- every idle frame can race the engine's UI rebuild.
-        if mode.coop_soul_refund_watch and hero and hero.sq
-            and (hero.sq.px ~= mode.coop_soul_refund_origin_px
-                or hero.sq.py ~= mode.coop_soul_refund_origin_py) then
-            -- A Knight-soul move was committed instead of canceled. Do not let
-            -- a later, unrelated Knight soul pickup be mistaken for a refund.
-            mode.coop_soul_refund_watch = false
-            mode.coop_soul_revival_descriptor = nil
-            mode.coop_soul_refund_origin_px = nil
-            mode.coop_soul_refund_origin_py = nil
-        end
-        -- Re-clear after the base update: the soul-card caller can set these
-        -- fields after activate_soul's post-hook has already run.
-        if mode.coop_force_clear_hero_soul and mode.coop_force_clear_hero_soul > 0 then
-            hero.soul = mode.coop_hero_soul_cleanup
-            hero.c_soul = mode.coop_hero_c_soul_cleanup
-            hero.behavior = mode.coop_hero_behavior_cleanup
-            mode.coop_force_clear_hero_soul = mode.coop_force_clear_hero_soul - 1
-            if _log then
-                _log("[COOP SOUL] post-update cleanup frames="
-                    .. coop_string(mode.coop_force_clear_hero_soul)
-                    .. " hero.soul=" .. coop_string(hero.soul)
-                    .. " hero.c_soul=" .. coop_string(hero.c_soul))
-            end
-            if mode.coop_force_clear_hero_soul == 0 then
-                mode.coop_hero_soul_cleanup = nil
-                mode.coop_hero_c_soul_cleanup = nil
-                mode.coop_hero_behavior_cleanup = nil
-            end
-        end
-        if mode.knight_ever_died and not mode.coop_knight then
-            -- Soul targets are calculated before the card is clicked. Keep
-            -- the Knight soul range suppressed for the entire dead-knight
-            -- state, so those cached squares never become king moves.
-            mode.coop_block_knight_soul_range = true
-            mode.coop_soul_range_block_turn = nil
-        elseif mode.coop_block_knight_soul_range
-            and mode.turns ~= mode.coop_soul_range_block_turn then
-            mode.coop_block_knight_soul_range = false
-            mode.coop_soul_range_block_turn = nil
-        end
-        coop_refresh_knight_death()
-        if not mode.coop_floor_transition
-            and not mode.coop_spawn_wait_for_turn
-            and not mode.knight_ever_died and not mode.coop_knight then
-            spawn_coop_knight()
-        end
-        coop_spawn_barricades()
-        coop_break_king_barricade()
-        coop_track_knight_presence()
-        coop_watch_bishop_preparation()
-        coop_refresh_divisive_edict()
-        if mode.coop_select_king_pending then
-            mode.coop_select_king_pending = nil
-            -- Knight movement, blade, and charge do not call native new_turn.
-            -- Mark their action before the King can move, otherwise the
-            -- King's move is swallowed as the first half of another round.
-            mode.black_actions = 1
-            if mode.coop_selected ~= "king" then coop_set_selected("king") end
-        end
-        if mode.coop_auto_select_knight_pending then
-            local knight = mode.coop_knight
-            -- Delayed white-card reinforcements can still be animating after
-            -- init_new_turn. Leave the King selected until those events end.
-            local waiting_for_events = (type(events) == "table" and #events > 0)
-                or coop_white_move_animation_pending()
-            if waiting_for_events and _log then
-                local key = coop_string(mode.lvl) .. ":" .. coop_string(mode.turns)
-                if mode.coop_auto_select_wait_logged ~= key then
-                    mode.coop_auto_select_wait_logged = key
-                    _log("[COOP TURN TRACE] wait for white animation before Knight selection"
-                        .. " floor=" .. coop_string(mode.lvl)
-                        .. " turn=" .. coop_string(mode.turns)
-                        .. " events=" .. coop_string(type(events) == "table"
-                            and #events or nil)
-                        .. " grace=" .. coop_string(mode.coop_white_move_grace_frames))
-                end
-            end
-            if mode.knight_ever_died or not knight or knight.ready == false then
-                mode.coop_auto_select_knight_pending = nil
-                mode.coop_king_move_input_locked = nil
-                mode.coop_extra_king_action_pending = nil
-            elseif knight.sq and not mode.coop_floor_transition
-                and not mode.coop_pause_menu_open and not waiting_for_events then
-                if _log then
-                    _log("[COOP TURN TRACE] auto-select Knight enter floor="
-                        .. coop_string(mode.lvl) .. " turn=" .. coop_string(mode.turns)
-                        .. " events=" .. coop_string(type(events) == "table"
-                            and #events or nil))
-                end
-                mode.coop_auto_select_knight_pending = nil
-                if mode.coop_selected ~= "knight" then
-                    coop_set_selected("knight")
-                    if _log then _log("[COOP INPUT] new round starts with Knight") end
-                end
-                mode.coop_king_move_input_locked = nil
-                mode.coop_extra_king_action_pending = nil
-            end
-        end
-        -- Native extra actions do not run init_new_turn. Release the click
-        -- guard after their movement and event animations have settled.
-        if mode.coop_king_move_input_locked
-            and (mode.coop_penta_bonus_pending
-                or mode.coop_extra_king_action_pending)
-            and not mode.coop_manual_king_enemy_turn_pending
-            and not mode.coop_native_turn_in_progress
-            and not mode.coop_auto_select_knight_pending
-            and not (hero and hero.in_move)
-            and (type(events) ~= "table" or #events == 0)
-            and not mode.coop_pause_menu_open then
-            if mode.coop_extra_king_action_pending
-                and mode.coop_extra_king_action_pending > 0 then
-                mode.coop_extra_king_action_pending =
-                    mode.coop_extra_king_action_pending - 1
-            else
-                mode.coop_king_move_input_locked = nil
-                mode.coop_extra_king_action_pending = nil
-                if _log then _log("[COOP ROUND] extra King action input unlocked") end
-            end
-        end
-        if mode.coop_selected == "knight" and mode.coop_knight
-            and mode.coop_knight_move_origin_sq
-            and mode.coop_knight.sq ~= mode.coop_knight_move_origin_sq then
-            coop_finish_knight_move(mode.coop_knight, mode.coop_knight.sq)
-        end
-        if not mode.coop_surrender_input_locked
-            and not coop_white_move_animation_pending()
-            and (not coop_controller or coop_controller.can_switch())
-            and btnp("coop_switch", 0)
-            and mode.coop_knight then
-            local knight = mode.coop_knight
-            local changed = false
-            if mode.coop_selected == "knight" and knight.ready ~= false then
-                -- Tab is an optional pass when 2P has no desired move.
-                changed = coop_pass_knight_action()
-            elseif mode.coop_selected == "king" and knight.ready ~= false then
-                -- Allows selecting a Knight revived during the King's phase.
-                coop_set_selected("knight")
-                changed = true
-            end
-            if changed then
-                if _log then
-                    _log("[COOP INPUT] Tab selected=" .. coop_string(mode.coop_selected)
-                        .. " knight_ready=" .. coop_string(knight.ready ~= false))
-                end
-                sfx("menu_in")
-            end
-        end
-        if not mode.coop_knight and mode.knight_ever_died and btnp("coop_revive", 0) then
-            activate_soul(1, hero.sq)
-        end
-    end, "coop_blocker_update")
-
-    append("_update", function()
-        if not is_coop_active() then return end
-        coop_assign_warrant_hunter()
-    end, "coop_warrant_hunter_update")
-
-    append("_update", function()
-        if not is_coop_active() then return end
-        for _, guard in ipairs(mode.coop_spent_soul_click_guards or {}) do
-            if (guard.soul and guard.soul.id ~= nil)
-                or (guard.refilled_slot and guard.refilled_slot.id ~= nil) then
-                -- A soul won during a Knight kill may be refilled before its
-                -- native button can safely be reached. Retry after the
-                -- animation rather than leaving that button disabled.
-                coop_refresh_spent_souls()
-                break
-            end
-        end
-    end, "coop_refilled_soul_buttons")
-
-    -- soul revive
-    prepend("activate_soul", function(soul, sq)
-        if is_coop_active() and mode.coop_selected == "knight"
-            and mode.coop_knight and mode.coop_knight.ready ~= false
-            and type(soul) == "table" and soul.id ~= nil then
-            local usable = (soul.id == 1 and has_card and coop_has_knight_skill("Co-op Knight Spirit"))
-                or ((soul.id == 2 or soul.id == 3)
-                    and has_card and coop_has_knight_skill("Co-op In-Law"))
-            if usable then
-                mode.coop_knight_selected_soul = soul
-                mode.coop_knight_soul_king_state = {
-                    soul=hero.soul, c_soul=hero.c_soul,
-                    behavior=coop_copy_table(hero.behavior)
-                }
-            end
-        end
-        -- This game version passes the soul animation/descriptor table, whose
-        -- `id` is the soul type. Knight soul is id 1. activate_soul itself is
-        -- not replaceable, so defer the revive until its native effect runs.
-        if is_coop_active() and mode.knight_ever_died and not mode.coop_knight
-            and type(soul) == "table" and soul.id == 1 then
-            mode.coop_soul_revival_pending = true
-            mode.coop_block_knight_soul_range = true
-            mode.coop_soul_range_block_turn = mode.turns
-            mode.coop_hero_soul_before = hero.soul
-            mode.coop_hero_c_soul_before = hero.c_soul
-            mode.coop_hero_behavior_before = coop_copy_table(hero.behavior)
-            mode.coop_hero_sq_before = hero.sq
-            mode.coop_hero_px_before = hero.sq and hero.sq.px
-            mode.coop_hero_py_before = hero.sq and hero.sq.py
-            mode.coop_soul_revival_descriptor = soul
-            if _log then _log("[COOP SOUL] knight soul reserved for 2P revive") end
-        end
-    end, "coop_soul")
-
-    append("activate_soul", function(soul)
-        if mode and mode.id == "coop" then
-            local old = mode.coop_knight_soul_king_state
-            if old and hero then
-                hero.soul = old.soul
-                hero.c_soul = old.c_soul
-                hero.behavior = old.behavior
-                mode.coop_hero_soul_cleanup = old.soul
-                mode.coop_hero_c_soul_cleanup = old.c_soul
-                mode.coop_hero_behavior_cleanup = old.behavior
-                mode.coop_force_clear_hero_soul = 3
-                mode.coop_knight_soul_king_state = nil
-            end
-            -- The native soul effect runs first; then finish the Knight revive.
-            if mode.coop_soul_revival_pending then
-                coop_complete_soul_revival()
-            end
-        end
-    end, "coop_soul_immediate_revival")
-
-    prepend("add_soul", function(id, from)
-        coop_stats_soul_refund(id, from)
-        if not is_coop_active() or type(get_empty_soul_slot) ~= "function" then return end
-        local slot = get_empty_soul_slot()
-        mode.coop_pending_soul_fill_slot = slot
-        if type(slot) == "table" and type(slot.x) == "number"
-            and type(slot.y) == "number" then
-            mode.coop_known_soul_slots = mode.coop_known_soul_slots or {}
-            for _, known in ipairs(mode.coop_known_soul_slots) do
-                if known == slot then return end
-            end
-            add(mode.coop_known_soul_slots, slot)
-        end
-    end, "coop_remember_soul_slot")
-
-    append("add_soul", function(...)
-        if mode and mode.id == "coop" then
-            local filled_slot = mode.coop_pending_soul_fill_slot
-            mode.coop_pending_soul_fill_slot = nil
-            local args = {...}
-            -- Native cancellation has no source and runs on right-click.
-            -- A captured Knight also grants id=1, even while the King stays
-            -- on the revival square; that is a new soul, never a refund.
-            local is_revival_refund = mode.coop_soul_refund_watch
-                and args[1] == 1 and args[2] == nil and mcr
-            if is_revival_refund then
-                local stayed_on_origin = hero and hero.sq
-                    and hero.sq.px == mode.coop_soul_refund_origin_px
-                    and hero.sq.py == mode.coop_soul_refund_origin_py
-                if stayed_on_origin and mode.coop_soul_revival_descriptor
-                    and filled_slot and filled_slot.id == 1 and exhaust_soul then
-                    -- Only consume the slot THIS refund filled. The original
-                    -- descriptor may now contain a legitimate captured soul.
-                    -- A full inventory means no new slot was filled: consume none.
-                    local guard = coop_track_spent_soul(filled_slot)
-                    mode.coop_spent_soul_click_guard = guard
-                    mode.coop_stats_soul_refund_cleanup = true
-                    exhaust_soul(filled_slot)
-                    mode.coop_stats_soul_refund_cleanup = nil
-                    coop_hide_spent_soul(guard)
-                    if _log then
-                        _log("[COOP SOUL] removed Knight soul returned by cancel; empty_slot="
-                            .. coop_string(get_empty_soul_slot and get_empty_soul_slot()))
-                    end
-                end
-                mode.coop_soul_refund_watch = false
-                mode.coop_soul_revival_descriptor = nil
-                mode.coop_soul_refund_origin_px = nil
-                mode.coop_soul_refund_origin_py = nil
-            else
-                -- Only release guards for the slot that native add_soul filled.
-                -- The other soul slots retain their double-click protection.
-                if _log and filled_slot then
-                    _log("[COOP SOUL] added into slot x=" .. coop_string(filled_slot.x)
-                        .. " y=" .. coop_string(filled_slot.y)
-                        .. " id=" .. coop_string(filled_slot.id)
-                        .. " oid=" .. coop_string(filled_slot.oid)
-                        .. " draw=" .. type(filled_slot.dr))
-                end
-                coop_restore_refilled_soul(filled_slot)
-                coop_release_spent_soul_slot(filled_slot)
-                coop_refresh_spent_souls()
-            end
-        end
-    end, "coop_soul_refund_cleanup")
-
-    -- The log shows get_soul_range delegates the actual targets to
-    -- get_range(hero, knight_piece). Override the source piece for that call,
-    -- not around get_soul_range itself (which restores too early).
-    prepend("get_range", function(piece, range_piece)
-        if not is_coop_active() or mode.coop_floor_transition
-            or mode.coop_spawn_wait_for_turn or mode.coop_native_turn_in_progress
-            or (piece ~= hero and piece ~= mode.coop_king_hero) then return end
-        local suppress_soul_range = mode.coop_block_knight_soul_range
-            and type(range_piece) == "table"
-            and (range_piece.type == 1 or range_piece.id == 1)
-        if not suppress_soul_range then return end
-
-        mode.coop_soul_range_override_entries = {}
-        local seen = {}
-        local function override(candidate)
-            if type(candidate) ~= "table" or seen[candidate] then return end
-            seen[candidate] = true
-            add(mode.coop_soul_range_override_entries, {
-                piece = candidate,
-                custom_range = candidate.custom_range,
-                behavior = candidate.behavior
-            })
-            candidate.custom_range = coop_no_soul_moves
-            candidate.behavior = {}
-        end
-        override(range_piece)
-        override(coop_get_knight_soul_piece())
-        if _log then
-            _log("[COOP RANGE] suppress Knight soul range=" .. coop_string(suppress_soul_range))
-        end
-    end, "coop_soul_range_override")
-
-    append("get_range", function()
-        local entries = mode and mode.id == "coop" and mode.coop_soul_range_override_entries
-        if not entries then return end
-        for _, entry in ipairs(entries) do
-            entry.piece.custom_range = entry.custom_range
-            entry.piece.behavior = entry.behavior
-        end
-        mode.coop_soul_range_override_entries = nil
-    end, "coop_soul_range_restore")
-
-    prepend("exhaust_soul", function(soul)
-        coop_stats_soul_begin(soul)
-    end, "coop_stats_soul_begin")
-    append("exhaust_soul", function(soul)
-        coop_stats_soul_end(soul)
-    end, "coop_stats_soul_end")
-
-    -- death check
-    -- Handle both the generic death event and the underlying removal/damage
-    -- paths. These hooks use only the affected piece argument, never the killer.
-    append("kill_piece", function(piece)
-        coop_award_ritual_dagger_kill(piece, true)
-        coop_mark_knight_dead(piece)
-        if is_coop_active() and coop_is_white_king(piece) then
-            -- Gun kills reach this path without the Knight blade's explicit
-            -- surrender lock. Stop queued 2P input before native turn cleanup.
-            mode.coop_surrender_input_locked = true
-            mode.coop_auto_select_knight_pending = nil
-            if mode.coop_knight then mode.coop_knight.ready = false end
-            if _log then _log("[COOP WIN] white King removed; Knight input locked") end
-        end
-    end, "coop_knight_kill_piece")
-
-    prepend("hit", function(piece, damage, attributes)
-        coop_stats_hit_begin(piece, attributes)
-        coop_prepare_redemption_knight_death(piece, damage)
-        if is_coop_active() and coop_is_white_king(piece) and _log then
-            _log("[COOP KING HIT] enter hp=" .. coop_string(piece.hp)
-                .. " damage=" .. coop_string(damage)
-                .. " turn=" .. coop_string(mode.turns)
-                .. " knight=" .. coop_string(mode.coop_knight ~= nil)
-                .. " revived_this_turn=" .. coop_string(
-                    mode.coop_revive_locked_turn == mode.turns))
-        end
-    end, "coop_white_king_hit_enter_trace")
-
-    append("hit", function(piece)
-        coop_stats_hit_end(piece)
-        coop_award_ritual_dagger_kill(piece)
-        if mode and mode.id == "coop"
-            and piece == mode.coop_redemption_native_knight then
-            -- A prevented death must leave the playable Knight's custom type
-            -- intact. A dead piece stays type 1 for queued Redemption events.
-            if piece.dead ~= true and type(piece.hp) == "number" and piece.hp > 0 then
-                piece.type = mode.coop_redemption_native_knight_type
-            end
-            mode.coop_redemption_native_knight = nil
-            mode.coop_redemption_native_knight_type = nil
-        end
-        if is_coop_active() and coop_is_white_king(piece) and _log then
-            _log("[COOP KING HIT] returned hp=" .. coop_string(piece.hp)
-                .. " floor_transition=" .. coop_string(mode.coop_floor_transition))
-        end
-        if mode and mode.id == "coop" and piece and piece == mode.coop_knight
-            and (piece.dead == true or (piece.hp ~= nil and piece.hp <= 0)) then
-            coop_mark_knight_dead(piece)
-        end
-        if type(piece) == "table" and piece.team == 1
-            and (piece.dead == true or (piece.hp ~= nil and piece.hp <= 0)) then
-            coop_award_warrant_knight_soul(piece)
-        end
-        coop_duet_king_hit(piece)
-    end, "coop_knight_hit_death")
-
-    append("ev_death", function(...)
-        if not is_coop_active() then return end
-        local args = {...}
-        local victim = args[1]
-        -- Some death paths pass a square or include the attacker. Only mark
-        -- the knight dead when it appears in the event and is no longer on
-        -- the board (or has definitively reached zero HP).
-        if coop_event_has_knight(...) and mode.coop_knight then
-            local knight = mode.coop_knight
-            if knight.dead == true or (knight.hp ~= nil and knight.hp <= 0)
-                or not coop_knight_is_on_board(knight) then
-                coop_mark_knight_dead(knight)
-            end
-        end
-        if type(victim) == "table" then
-            victim = victim.piece or victim.entity or victim.target or victim
-        end
-        local warrant_type = get_coop_warrant_type()
-        local is_warrant = type(victim) == "table" and victim.team == 1
-            and warrant_type ~= nil and victim.type == warrant_type
-        if is_warrant then coop_award_warrant_knight_soul(victim) end
-        -- A full soul bar revives 2P after either ordinary Knight or
-        -- Warrant Knight provides the Knight soul.
-        if type(victim) == "table" and victim.team == 1
-            and (victim.type == 1 or is_warrant)
-            and not mode.coop_knight and mode.knight_ever_died then
-            if get_empty_soul_slot() == nil then
-                revive_coop_knight()
-            end
-        end
-    end, "coop_death")
+    coop_install_core_hooks()
+    coop_install_floor_hooks()
+    coop_install_turn_hooks()
+    coop_install_input_hooks()
+    coop_install_soul_hooks()
 end
 
 -- ==================== Game Procedure ====================
@@ -4777,16 +4734,14 @@ function coop_show_run_stats(won)
         button(left+12, mode.coop_stats_continue and (zh and "返回剿灭" or "Back to Charnier") or (zh and "重新开始" or "Restart"), true)
     end
     button(left+140, zh and "返回主菜单" or "Main menu", false)
-    if _log then
-        _log("[COOP STATS] win=" .. coop_string(won)
-            .. " king_damage=" .. stats.players[1].damage
-            .. " king_kills=" .. stats.players[1].kills
-            .. " king_souls=" .. stats.players[1].souls
-            .. " knight_damage=" .. stats.players[2].damage
-            .. " knight_kills=" .. stats.players[2].kills
-            .. " knight_souls=" .. stats.players[2].souls
-            .. " knight_deaths=" .. stats.knight_deaths)
-    end
+    coop_log("[COOP STATS] win=" .. coop_string(won)
+        .. " king_damage=" .. stats.players[1].damage
+        .. " king_kills=" .. stats.players[1].kills
+        .. " king_souls=" .. stats.players[1].souls
+        .. " knight_damage=" .. stats.players[2].damage
+        .. " knight_kills=" .. stats.players[2].kills
+        .. " knight_souls=" .. stats.players[2].souls
+        .. " knight_deaths=" .. stats.knight_deaths)
 end
 
 function start()
@@ -4810,9 +4765,7 @@ function start()
     if wild_pairs<1 then wild_pairs=tonum(coop_dev_wild_requests) or 0 end
     if grant_wildcards and wild_pairs<1 then wild_pairs=1 end
     coop_dev_wild_requests=0
-    if _log then
-        _log("[COOP] dev start: wild_pairs="..coop_string(wild_pairs))
-    end
+    coop_log("[COOP] dev start: wild_pairs="..coop_string(wild_pairs))
     coop_stats_begin_run()
     mode.coop_heir_reveal_floor=nil
     mode.coop_hidden_boss_pending = nil
@@ -4937,9 +4890,7 @@ function start()
             if get_card("White Wild Card") then add_card("White Wild Card") end
         end
         mode.coop_dev_wild = true
-        if _log then
-            _log("[COOP] granted "..coop_string(wild_pairs).." Card Lab Wild Card pair(s)")
-        end
+        coop_log("[COOP] granted "..coop_string(wild_pairs).." Card Lab Wild Card pair(s)")
     end
     if mode.coop_dev_wild then
         -- Card Lab's Wild Card click handler never runs in this build: nothing
@@ -4952,10 +4903,8 @@ function start()
                 if not mode or not mode.coop_dev_wild then return end
                 remove_buts()
                 local team = ca.team
-                if _log then
-                    _log("[COOP] wild card clicked; picking any card team="
-                        .. coop_string(team))
-                end
+                coop_log("[COOP] wild card clicked; picking any card team="
+                    .. coop_string(team))
                 tear_apart(ca, bind(add_any_card, {team = team}, play))
             end
         end
@@ -4999,9 +4948,9 @@ function start()
     -- completed floor: next_floor() increments it before loading the board.
     local start_level = not mode.coop_variant and (COOP_START_LVL or START_LVL)
     if type(start_level) == "number" and start_level >= 1 then
-        if _log then _log("[COOP FLOOR] debug shortcut begin level=" .. coop_string(start_level)) end
+        coop_log("[COOP FLOOR] debug shortcut begin level=" .. coop_string(start_level))
         build_stack()
-        if _log then _log("[COOP FLOOR] debug shortcut stack built") end
+        coop_log("[COOP FLOOR] debug shortcut stack built")
         mode.lvl = start_level
         -- The base mode grants random cards here. Co-op's native card picker
         -- has faulted before reaching the boss board, so isolate floor 12
@@ -5009,10 +4958,8 @@ function start()
         if start_level == 11 then
             add(upgrades, {gain={6}, sac={5}})
         end
-        if _log then
-            _log("[COOP FLOOR] debug START_LVL=" .. coop_string(start_level)
-                .. " next_floor=" .. coop_string(start_level + 1))
-        end
+        coop_log("[COOP FLOOR] debug START_LVL=" .. coop_string(start_level)
+            .. " next_floor=" .. coop_string(start_level + 1))
     end
     next_floor()
 end
@@ -5022,11 +4969,6 @@ end
 -- its lottery from pwe (+4 per character of need_card), so raising it makes a
 -- card far more likely without pinning the offer. A network guest skips this
 -- because the host owns the level-up offers.
-local function coop_demo_trim(s)
-    while #s > 0 and (sub(s, 1, 1) == " " or sub(s, 1, 1) == "\t") do s = sub(s, 2) end
-    while #s > 0 and (sub(s, #s, #s) == " " or sub(s, #s, #s) == "\t") do s = sub(s, 1, #s - 1) end
-    return s
-end
 local function coop_demo_apply_weights()
     if mode.net and mode.net.role == "client" then return end
     if type(cards) ~= "table" or type(cards.pool) ~= "table" then return end
@@ -5036,15 +4978,14 @@ local function coop_demo_apply_weights()
     while start <= #raw do
         local stop = start
         while stop <= #raw and sub(raw, stop, stop) ~= "\n" do stop = stop + 1 end
-        local id, weight = match(sub(raw, start, stop - 1), "^([^=]+)%s*=%s*(%d+)%s*$")
+        local id, weight = match(sub(raw, start, stop - 1), "^%s*([^=]-)%s*=%s*(%d+)%s*$")
         local value = weight and tonum(weight)
         if id and value and value > 0 then
-            id = coop_demo_trim(id)
             for i = 1, #cards.pool do
                 local ca = cards.pool[i]
                 if ca and ca.id == id and ca.pwe ~= value then
                     ca.pwe = value
-                    if _log then _log("[COOP DEMO] weight " .. id .. "=" .. value) end
+                    coop_log("[COOP DEMO] weight " .. id .. "=" .. value)
                 end
             end
         end
@@ -5059,34 +5000,30 @@ function next_floor()
     mode.coop_opening_king_turn = true
     mode.black_actions = 0
     mode.coop_auto_select_knight_pending = nil
-    if _log then _log("[COOP FLOOR] next_floor entering new_level floor=" .. coop_string(mode.lvl)) end
+    coop_log("[COOP FLOOR] next_floor entering new_level floor=" .. coop_string(mode.lvl))
     new_level()
-    if _log then _log("[COOP FLOOR] next_floor returned from new_level floor=" .. coop_string(mode.lvl)) end
+    coop_log("[COOP FLOOR] next_floor returned from new_level floor=" .. coop_string(mode.lvl))
 end
 
 function grow()
-    if _log then _log("[COOP FLOOR] grow floor=" .. coop_string(mode.lvl)) end
+    coop_log("[COOP FLOOR] grow floor=" .. coop_string(mode.lvl))
     -- The boss vignette replaces the board just like an ordinary card choice.
     -- Release the old Knight before either transition; otherwise its cleared
     -- square and old UI references survive into the boss scene.
     if mode.coop_knight then
-        if _log then
-            _log("[COOP FLOOR] release old Knight before transition"
-                .. " hp=" .. coop_string(mode.coop_knight.hp)
-                .. " square=" .. coop_trace_value(mode.coop_knight.sq)
-                .. " died=" .. coop_string(mode.knight_ever_died))
-        end
+        coop_log("[COOP FLOOR] release old Knight before transition"
+            .. " hp=" .. coop_string(mode.coop_knight.hp)
+            .. " square=" .. coop_trace_value(mode.coop_knight.sq)
+            .. " died=" .. coop_string(mode.knight_ever_died))
         mode.coop_knight = nil
     end
     mode.coop_last_knight_origin_sq = nil
     mode.coop_last_knight_destination_sq = nil
     -- Keep exhausted soul descriptors until their slots are refilled. The
     -- new_level hook drops their old button references after the board swap.
-    if _log then
-        _log("[COOP FLOOR] retaining spent-soul guards="
-            .. coop_string(type(mode.coop_spent_soul_click_guards) == "table"
-                and #mode.coop_spent_soul_click_guards or 0))
-    end
+    coop_log("[COOP FLOOR] retaining spent-soul guards="
+        .. coop_string(type(mode.coop_spent_soul_click_guards) == "table"
+            and #mode.coop_spent_soul_click_guards or 0))
     mode.coop_knight_soul_hover_guards = {}
     mode.coop_known_soul_slots = {}
     if mode.coop_campaign_grow then
@@ -5113,24 +5050,22 @@ function grow()
         -- Keep native team constraints: explicit IDs bypass pool removal and
         -- make Search draw the same card again. Only Homecoming above is a
         -- scripted native offer (its own reroll becomes Tragic Homecoming).
-        if _log then
-            _log("[COOP FLOOR] opening level-up choices"
-                .. " selected=" .. coop_string(mode.coop_selected)
-                .. " knight=" .. coop_string(mode.coop_knight ~= nil)
-                .. " knight_dead=" .. coop_string(mode.knight_ever_died)
-                .. " hero=" .. coop_trace_value(hero)
-                .. " cards=" .. coop_string(type(cards))
-                .. " card_pool=" .. coop_string(type(cards) == "table"
-                    and type(cards.pool) == "table" and #cards.pool or nil)
-                .. " upgrades=" .. coop_string(type(upgrades))
-                .. " upgrade_count=" .. coop_string(type(upgrades) == "table"
-                    and #upgrades or nil)
-                .. " unlimited=" .. coop_string(mode.unlimited))
-        end
+        coop_log("[COOP FLOOR] opening level-up choices"
+            .. " selected=" .. coop_string(mode.coop_selected)
+            .. " knight=" .. coop_string(mode.coop_knight ~= nil)
+            .. " knight_dead=" .. coop_string(mode.knight_ever_died)
+            .. " hero=" .. coop_trace_value(hero)
+            .. " cards=" .. coop_string(type(cards))
+            .. " card_pool=" .. coop_string(type(cards) == "table"
+                and type(cards.pool) == "table" and #cards.pool or nil)
+            .. " upgrades=" .. coop_string(type(upgrades))
+            .. " upgrade_count=" .. coop_string(type(upgrades) == "table"
+                and #upgrades or nil)
+            .. " unlimited=" .. coop_string(mode.unlimited))
         -- end_level suspends event processing until the card screen is open.
         -- Open it in the callback, as the base Throne mode does.
         level_up(data, next_floor)
-        if _log then _log("[COOP FLOOR] level_up returned directly") end
+        coop_log("[COOP FLOOR] level_up returned directly")
     elseif mode.lvl == 11 then
         -- The boss vignette also retires the old UI button references.
         for _, guard in ipairs(mode.coop_spent_soul_click_guards or {}) do
@@ -5149,7 +5084,7 @@ function on_empty()
     -- end_level twice creates overlapping floor transitions and breaks the
     -- next floor's board/input state.
     if mode.coop_floor_transition then
-        if _log then _log("[COOP WIN] ignored duplicate on_empty on floor " .. coop_string(mode.lvl)) end
+        coop_log("[COOP WIN] ignored duplicate on_empty on floor " .. coop_string(mode.lvl))
         return
     end
     coop_track_knight_presence()
@@ -5176,9 +5111,9 @@ function on_empty()
     mode.coop_opening_king_turn = false
     coop_log_knight_state("on_empty")
     coop_record_knight_state_before_floor_change()
-    if _log then _log("[COOP FLOOR] calling end_level floor=" .. coop_string(mode.lvl)) end
+    coop_log("[COOP FLOOR] calling end_level floor=" .. coop_string(mode.lvl))
     end_level(grow)
-    if _log then _log("[COOP FLOOR] end_level returned floor=" .. coop_string(mode.lvl)) end
+    coop_log("[COOP FLOOR] end_level returned floor=" .. coop_string(mode.lvl))
 end
 
 function on_hero_death()
@@ -5229,10 +5164,8 @@ function check_unlocks()
         if bget(index, 4) == 1 then return end
         bset(index, 4, 1)
         savbnk()
-        if _log then
-            _log("[COOP UNLOCK] " .. weapons[index].name
-                .. " blade=" .. coop_string(stack and stack.blade))
-        end
+        coop_log("[COOP UNLOCK] " .. weapons[index].name
+            .. " blade=" .. coop_string(stack and stack.blade))
         fx_unlock(weapons[index].name, {icon={x=21, y=282, w=12, h=6}})
     end
 
@@ -5693,137 +5626,153 @@ function draw_inter()
 end
 
 -- Shared rule entry: local input and network adapters use the same action body.
+local function coop_knight_blade_action(knight, target, target_piece, blade_available)
+    if not target or not blade_available or not target_piece
+        or not coop_knight_can_attack_target(knight, target)
+        or knight.ready == false or type(hit) ~= "function" then
+        return false
+    end
+    local target_was_white_king = coop_is_white_king(target_piece)
+    local spear_attack = coop_knight_can_spear_target(knight, target)
+    local blade_damage = coop_grand_phalanx_blade_damage(target_piece,
+        coop_knight_guarded_blade_damage(target_piece,
+            coop_knight_attack_damage(knight, nil, target_piece,
+                spear_attack and 2 or nil)))
+    local hp_before = target_piece.hp
+    coop_log("[COOP ATTACK] blade target=" .. coop_trace_value(target_piece)
+        .. " damage=" .. coop_string(blade_damage)
+        .. " hp_before=" .. coop_string(hp_before)
+        .. " king_hop_before=" .. coop_string(hero and hero.hop)
+        .. " stack_hop=" .. coop_string(stack and stack.hop)
+        .. " hit_api=" .. type(hit))
+    sfx("blade")
+    coop_start_knight_swing(knight, target, spear_attack)
+    local sweep_targets = coop_knight_sweep_targets(knight.sq, target)
+    local sweep_killed_king = false
+    if target_was_white_king then
+        sweep_killed_king = coop_apply_knight_sweep(sweep_targets)
+    end
+    if blade_damage > 0 then
+        local victim_square = target_piece.sq
+        local victim_attacks = type(get_range) == "function"
+            and get_range(target_piece, {atk=1}) or nil
+        hit(target_piece, blade_damage, {coop_stats_owner=2})
+        if target_piece.dead == true
+            or (target_piece.hp ~= nil and target_piece.hp <= 0) then
+            coop_record_knight_kill_ui(target_piece, victim_square, victim_attacks)
+        end
+        coop_record_bounty_kill(target_piece, hp_before)
+        coop_queue_royal_vigil(target_piece)
+        coop_apply_blade_revenge(target_piece)
+    end
+    if not target_was_white_king then
+        sweep_killed_king = coop_apply_knight_sweep(sweep_targets)
+    end
+    knight.ready = false
+    coop_queue_warrant_knight_check(knight)
+    mode.coop_auto_select_knight_pending = nil
+    mode.coop_select_king_pending = true
+    if sweep_killed_king or (target_was_white_king
+        and (target_piece.dead == true
+            or (target_piece.hp and target_piece.hp <= 0))) then
+        -- `hit` creates the surrender event, but a Knight attack does not
+        -- submit a King action to advance that event.
+        mode.coop_king_kill_pending_floor = mode.lvl
+        mode.coop_king_kill_pending_frames = 2
+        mode.coop_surrender_input_locked = true
+        coop_lock_surrender_controls()
+        coop_log("[COOP WIN] white King killed by Knight; queue native turn")
+    end
+    coop_log("[COOP ATTACK] blade resolved hp_after="
+        .. coop_string(target_piece.hp)
+        .. " king_hop_after=" .. coop_string(hero and hero.hop)
+        .. " knight_ready=" .. coop_string(knight.ready)
+        .. " selected=" .. coop_string(mode.coop_selected))
+    return true
+end
+
+local function coop_knight_move_action(knight, target, target_is_legal, ctx)
+    if not target_is_legal or knight.ready == false or target.piece
+        or target.moat or coop_has_barricade(target) or not is_free(target) then
+        return false
+    end
+    local click_x, click_y = ctx.click_x or 0, ctx.click_y or 0
+    local native_target = ctx.native_target
+    local native_target_source = ctx.native_target_source or "adapter"
+    local coordinate_target = ctx.coordinate_target or target
+    local native_target_is_actionable = ctx.native_target_is_actionable or false
+    mode.coop_knight_move_soul_to_spend = nil
+    if coop_knight_soul_ready(knight) then
+        mode.coop_knight_move_soul_to_spend = mode.coop_knight_selected_soul
+    end
+    mode.coop_knight_move_origin_sq = knight.sq
+    coop_log("[COOP INPUT] Knight jump click target=" .. coop_trace_value(target)
+        .. " from=" .. coop_trace_value(knight.sq)
+        .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
+        .. " native_target=" .. coop_trace_value(native_target)
+        .. " coordinate_target=" .. coop_trace_value(coordinate_target)
+        .. " target_api=" .. coop_string(native_target_source)
+        .. " source=" .. (native_target_is_actionable and "native" or "coordinates"))
+    -- `hero` remains the King for engine rendering and enemy AI.
+    -- Submit the Knight move directly instead of routing it through the
+    -- hero-only move_hero controller.
+    move_piece(knight, target)
+    if knight.sq == target then coop_finish_knight_move(knight, target) end
+    return true
+end
+
 function coop_perform_knight_action(knight, target, context)
-    if not knight or not target or knight.ready==false then return false end
-    local c=context or {}
-    local board_click=c.board_click~=false
-    local target_is_legal=c.target_is_legal
-    if target_is_legal==nil then
-        for _,sq in ipairs(coop_get_knight_input_targets(knight)) do
-            if sq==target then target_is_legal=true break end
+    if not knight or not target or knight.ready == false then return false end
+    local c = context or {}
+    local board_click = c.board_click ~= false
+    local target_is_legal = c.target_is_legal
+    if target_is_legal == nil then
+        for _, sq in ipairs(coop_get_knight_input_targets(knight)) do
+            if sq == target then target_is_legal = true; break end
         end
     end
-    if board_click and coop_knight_soul_ready(knight) and mode.coop_knight_selected_soul.id==1 then
-        return coop_anchor_knight_charge(knight,target)
+    if board_click and coop_knight_soul_ready(knight)
+        and mode.coop_knight_selected_soul.id == 1 then
+        return coop_anchor_knight_charge(knight, target)
     end
-    local blade_available=not coop_knight_soul_ready(knight)
-    local click_x,click_y=c.click_x or 0,c.click_y or 0
-    local native_target,native_target_source=c.native_target,c.native_target_source or "adapter"
-    local coordinate_target=c.coordinate_target or target
-    local native_target_is_actionable=c.native_target_is_actionable or false
-            local target_piece = target and coop_piece_on_square(target)
-            local blade_handled = false
-            if board_click and target and blade_available
-                and coop_knight_can_attack_target(knight, target)
-                and knight.ready ~= false and type(hit) == "function" then
-                blade_handled = true
-                local target_was_white_king = coop_is_white_king(target_piece)
-                local spear_attack = coop_knight_can_spear_target(knight, target)
-                local blade_damage = coop_grand_phalanx_blade_damage(target_piece,
-                    coop_knight_guarded_blade_damage(target_piece,
-                        coop_knight_attack_damage(knight, nil, target_piece,
-                            spear_attack and 2 or nil)))
-                local hp_before = target_piece.hp
-                if _log then
-                    _log("[COOP ATTACK] blade target=" .. coop_trace_value(target_piece)
-                        .. " damage=" .. coop_string(blade_damage)
-                        .. " hp_before=" .. coop_string(hp_before)
-                        .. " king_hop_before=" .. coop_string(hero and hero.hop)
-                        .. " stack_hop=" .. coop_string(stack and stack.hop)
-                        .. " hit_api=" .. type(hit))
-                end
-                sfx("blade")
-                coop_start_knight_swing(knight, target, spear_attack)
-                local sweep_targets = coop_knight_sweep_targets(knight.sq, target)
-                local sweep_killed_king = false
-                if target_was_white_king then
-                    sweep_killed_king = coop_apply_knight_sweep(sweep_targets)
-                end
-                if blade_damage > 0 then
-                    local victim_square = target_piece.sq
-                    local victim_attacks = type(get_range) == "function"
-                        and get_range(target_piece, {atk=1}) or nil
-                    hit(target_piece, blade_damage, {coop_stats_owner=2})
-                    if target_piece.dead == true
-                        or (target_piece.hp ~= nil and target_piece.hp <= 0) then
-                        coop_record_knight_kill_ui(target_piece, victim_square,
-                            victim_attacks)
-                    end
-                    coop_record_bounty_kill(target_piece, hp_before)
-                    coop_queue_royal_vigil(target_piece)
-                    coop_apply_blade_revenge(target_piece)
-                end
-                if not target_was_white_king then
-                    sweep_killed_king = coop_apply_knight_sweep(sweep_targets)
-                end
-                knight.ready = false
-                coop_queue_warrant_knight_check(knight)
-                mode.coop_auto_select_knight_pending = nil
-                mode.coop_select_king_pending = true
-                if sweep_killed_king or (target_was_white_king
-                    and (target_piece.dead == true
-                        or (target_piece.hp and target_piece.hp <= 0))) then
-                    -- `hit` creates the surrender event, but a Knight attack
-                    -- does not submit a King action to advance that event.
-                    mode.coop_king_kill_pending_floor = mode.lvl
-                    mode.coop_king_kill_pending_frames = 2
-                    mode.coop_surrender_input_locked = true
-                    coop_lock_surrender_controls()
-                    if _log then _log("[COOP WIN] white King killed by Knight; queue native turn") end
-                end
-                if _log then
-                    _log("[COOP ATTACK] blade resolved hp_after="
-                        .. coop_string(target_piece.hp)
-                        .. " king_hop_after=" .. coop_string(hero and hero.hop)
-                        .. " knight_ready=" .. coop_string(knight.ready)
-                        .. " selected=" .. coop_string(mode.coop_selected))
-                end
-            elseif board_click and target and target_piece then
-                -- Occupied squares are never Knight destinations. Adjacent
-                -- enemies are handled only by the separate blade action.
-                if _log then
-                    _log("[COOP GUARD] occupied Knight destination rejected target="
-                        .. coop_trace_value(target)
-                        .. " occupant=" .. coop_trace_value(target_piece))
-                end
-            elseif board_click and target and not is_free(target) and _log then
-                _log("[COOP ATTACK TARGET] occupied square without piece lookup="
+    local blade_available = not coop_knight_soul_ready(knight)
+    local click_x, click_y = c.click_x or 0, c.click_y or 0
+    local native_target = c.native_target
+    local native_target_source = c.native_target_source or "adapter"
+    local coordinate_target = c.coordinate_target or target
+    local native_target_is_actionable = c.native_target_is_actionable or false
+    local target_piece = target and coop_piece_on_square(target)
+
+    local blade_handled = false
+    if board_click then
+        blade_handled = coop_knight_blade_action(knight, target, target_piece, blade_available)
+        if not blade_handled then
+            if target_piece then
+                coop_log("[COOP GUARD] occupied Knight destination rejected target="
+                    .. coop_trace_value(target)
+                    .. " occupant=" .. coop_trace_value(target_piece))
+            elseif not is_free(target) then
+                coop_log("[COOP ATTACK TARGET] occupied square without piece lookup="
                     .. coop_trace_value(target)
                     .. " square_piece=" .. type(target.piece))
-            elseif board_click and target and _log then
-                _log("[COOP INPUT] knight click ignored legal=" .. coop_string(target_is_legal)
+            else
+                coop_log("[COOP INPUT] knight click ignored legal=" .. coop_string(target_is_legal)
                     .. " ready=" .. coop_string(knight.ready ~= false)
                     .. " target=" .. coop_trace_value(target))
             end
+        end
+    end
 
-            -- Recheck at the point of movement. The target list was built at
-            -- click handling time, but an animation can change occupancy.
-            if board_click and not blade_handled and target_is_legal
-                and knight.ready ~= false and not target.piece
-                and not target.moat and not coop_has_barricade(target)
-                and is_free(target) then
-                mode.coop_knight_move_soul_to_spend = nil
-                if coop_knight_soul_ready(knight) then
-                    mode.coop_knight_move_soul_to_spend = mode.coop_knight_selected_soul
-                end
-                mode.coop_knight_move_origin_sq = knight.sq
-                if _log then
-                    _log("[COOP INPUT] Knight jump click target=" .. coop_trace_value(target)
-                        .. " from=" .. coop_trace_value(knight.sq)
-                        .. " mouse=" .. coop_string(click_x) .. "," .. coop_string(click_y)
-                        .. " native_target=" .. coop_trace_value(native_target)
-                        .. " coordinate_target=" .. coop_trace_value(coordinate_target)
-                        .. " target_api=" .. coop_string(native_target_source)
-                        .. " source=" .. (native_target_is_actionable and "native" or "coordinates"))
-                end
-                -- `hero` remains the King for engine rendering and enemy AI.
-                -- Submit the Knight move directly instead of routing it
-                -- through the hero-only move_hero controller.
-                move_piece(knight, target)
-                if knight.sq == target then coop_finish_knight_move(knight, target) end
-                return true
-            end
-
+    if board_click and not blade_handled then
+        return coop_knight_move_action(knight, target, target_is_legal, {
+            click_x = click_x,
+            click_y = click_y,
+            native_target = native_target,
+            native_target_source = native_target_source,
+            coordinate_target = coordinate_target,
+            native_target_is_actionable = native_target_is_actionable,
+        })
+    end
     return blade_handled
 end
 
@@ -5873,7 +5822,7 @@ if type(prepend)=="function" then prepend("new_level", function()
     local target = max(1, min(11, cfg.floor))
     if mode.lvl <= 1 and target > mode.lvl then
         mode.lvl = target
-        if _log then _log("[COOP DEV RUN] floor override " .. tostr(target)) end
+        coop_log("[COOP DEV RUN] floor override " .. tostr(target))
     end
 end, "coop_dev_run_floor") end
 if type(append)=="function" then append("_update", function()
@@ -5896,8 +5845,6 @@ if type(append)=="function" then append("_update", function()
             if known then add_card(id); granted = granted + 1 end
         end
     end
-    if _log then
-        _log("[COOP DEV RUN] floor=" .. tostr(mode.lvl) .. " granted=" .. tostr(granted)
-            .. " of " .. tostr(#cfg.cards))
-    end
+    coop_log("[COOP DEV RUN] floor=" .. tostr(mode.lvl) .. " granted=" .. tostr(granted)
+        .. " of " .. tostr(#cfg.cards))
 end, "coop_dev_run") end
