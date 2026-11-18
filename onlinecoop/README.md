@@ -2,7 +2,7 @@
 
 **[简体中文](README_zh.md) | English**
 
-Current version: **Unified 72 LAN 1**. The host (1P) controls the Black King; the joining player (2P) controls the Black Knight. Both run their own game. The host resolves combat and rules; 2P receives visuals and state and submits actions.
+Current version: **v0.73.0** (`coop-unified-r73.zip`). The host (1P) controls the Black King; the joining player (2P) controls the Black Knight. Both run their own game. The host resolves combat and rules; 2P receives visuals and state and submits actions.
 
 Fixed Folly Shield warnings after an independent Knight action changes a bishop/rook attack line, including Inquisition bishops seeing through cloak. Local and online modes share this fix.
 

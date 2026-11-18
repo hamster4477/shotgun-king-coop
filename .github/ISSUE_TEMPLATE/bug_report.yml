@@ -12,7 +12,7 @@ body:
     attributes:
       label: Mod version
       description: The title of the Workshop item, or the ZIP name you installed.
-      placeholder: e.g. Local & Online Co-op, coop-unified-r72d.zip
+      placeholder: e.g. Local & Online Co-op, coop-unified-r73.zip
     validations:
       required: true
   - type: dropdown
