@@ -163,20 +163,6 @@ function charnier_menu()
 		return MCH-n*22-14-min(n,1)*14
 	end
 	
-	-- DEV FORCE
-	if DEV then
-		--local a=ch.burdens
-		--a[1]=17
-		--ch.cinders=8
-		--ch.augments={8,9,10,11}
-		--ch.burdens={9,20,9,0,0} --,0,0,0,1,2,3,4,5,5
-		--ch.success=1
-		--ch.burdens={22,16,17,10,irnd(22),}
-		--ch.burdens={17}
-		--ch.cinders=0
-		--ch.defeat=1
-	end
-		
 	-- GRAPHICS
 	local bg=mke()
 	bg.dr=function()
