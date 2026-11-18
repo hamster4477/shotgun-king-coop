@@ -17,6 +17,8 @@ function sspr(x,y,w,h,dx,dy) if y==56 and w==3 and h==3 then add(hearts,{x,dx,dy
 function rectfill(...) add(bars,{...}) end
 function reset_draw() texts={};hearts={};bars={} end
 function noop() end
+function prepend(k,f,id) end
+function append(k,f,id) end
 function coop_draw_turn_indicator(player,active) turn_player=player end
 clip=noop;pal=noop;sprgrid=noop;coop_draw_empty_soul_slot=noop
 function winspec() end

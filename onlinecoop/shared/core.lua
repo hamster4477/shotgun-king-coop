@@ -5866,7 +5866,7 @@ end
 -- `start`, so a start hook aborts the run. The floor is rewritten before the first
 -- board is built; jumping later via next_floor() crashes inside code.lua because
 -- `hero` does not exist yet.
-prepend("new_level", function()
+if type(prepend)=="function" then prepend("new_level", function()
     if not mode or mode.id ~= "coop" or mode.dev_run_applied then return end
     local cfg = coop_dev_run_parse()
     if not cfg or not cfg.floor then return end
@@ -5875,8 +5875,8 @@ prepend("new_level", function()
         mode.lvl = target
         if _log then _log("[COOP DEV RUN] floor override " .. tostr(target)) end
     end
-end, "coop_dev_run_floor")
-append("_update", function()
+end, "coop_dev_run_floor") end
+if type(append)=="function" then append("_update", function()
     if mode.dev_run_applied or not mode or mode.id ~= "coop" then return end
     if not (hero and hero.sq) then return end
     local cfg = coop_dev_run_parse()
@@ -5900,4 +5900,4 @@ append("_update", function()
         _log("[COOP DEV RUN] floor=" .. tostr(mode.lvl) .. " granted=" .. tostr(granted)
             .. " of " .. tostr(#cfg.cards))
     end
-end, "coop_dev_run")
+end, "coop_dev_run") end
