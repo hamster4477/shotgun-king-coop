@@ -2693,7 +2693,7 @@ function coop_resolve_knight_charge()
     end
 end
 
--- ==================== 初始化 ====================
+-- ==================== Initialize ====================
 function initialize()
     coop_install_royal_cards()
     coop_load_janissary_art()
@@ -3511,7 +3511,7 @@ function initialize()
         end
     end, "coop_white_phase_return_trace")
 
-    -- 双动拦截
+    -- Two-action turn gate: one native turn carries King and Knight actions
     prepend("new_turn", function()
         if not mode or mode.id ~= "coop" then return end
         -- The coop interceptor can skip the first native new_turn call. The

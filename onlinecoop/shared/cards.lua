@@ -309,7 +309,7 @@ add(PIECES, {
     name = "coop_knight",
     is_coop_p2 = true,
     hp = 1,
-    tempo = 1,                     -- 每回合可手动操作一次
+    tempo = 1,                     -- acts once per turn when chosen by hand
     danger = 0,
     give_soul = false,
     nocarry = 1,
