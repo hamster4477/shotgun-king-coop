@@ -192,7 +192,7 @@ local function coop_localize_cards(language)
     lang["Co-op Deflect Armor"] = chinese and "偏转护甲" or "Deflect Armor"
     lang["Co-op Abbey of Kings"] = chinese and "列王修道院" or "Abbey of Kings"
     lang["effect_coop_high_saddle"] = chinese and "冲锋后的下一回合，黑骑士刀锋 +2" or "The Black Knight gains +2 blade for the turn after a charge"
-    lang["effect_coop_deflect_armor"] = chinese and "白王持盾时子弹落空，准备移动的回合可受到最多1点射击伤害，等待行动回合-1；刀锋破盾，破盾当回合免伤，移动后恢复盾牌" or "Shielded white Kings evade bullets, but can take up to 1 bullet damage per turn when ready to move; wait 1 fewer turn. Blade breaks the shield; immune for that turn. Moving restores the shield"
+    lang["effect_coop_deflect_armor"] = chinese and "白王获得偏转护甲。激活后对子弹免疫，并能吸收一次黑骑士的刀刃攻击；移动会恢复护甲。偏转护甲还会提高移动速度。" or "White Kings gain Deflect Armor. While active, they are immune to bullets and can absorb one Black Knight blade hit; moving restores the armor. Deflect Armor also increases movement speed."
     lang["effect_coop_abbey"] = chinese and "白王周围的白棋每回合恢复1点血量" or "White pieces around the white King recover 1 HP each turn"
     lang["effect_coop_grindstone"] = chinese
         and "合作模式：每经过12回合，黑骑士利刃 +1"

@@ -55,13 +55,18 @@ function coop_install_royal_cards()
     prepend("hit",function(e,dmg,at)
         if not coop_deflect_active(e) then return end
         at=at or {}
+        if e.coop_deflect_break_guard then
+            e.coop_deflect_break_guard=nil
+            e.c_protected=nil
+        end
         local blade=at.blade or at.coop_stats_owner==2
-        if blade and not e.coop_deflect_broken then
-            e.coop_deflect_broken=true;e.coop_deflect_break_turn=mode.turns
+        local broke=blade and not e.coop_deflect_broken
+        if broke then
+            e.coop_deflect_broken=true
+            e.coop_deflect_break_guard=true
             sfx("shield")
         end
-        if at.bullet and coop_deflect_shielded(e) and e.ready==true
-            and e.coop_deflect_break_turn~=mode.turns then
+        if at.bullet and coop_deflect_shielded(e) and e.ready==true then
             if e.coop_deflect_shot_turn~=mode.turns then
                 e.coop_deflect_shot_turn=mode.turns;e.coop_deflect_shot_damage=0
             end
@@ -69,8 +74,7 @@ function coop_install_royal_cards()
             e.coop_deflect_cap_override=true;e.coop_deflect_before_hp=e.hp
             e.dmg_cap=min(e.dmg_cap or 1,max(0,1-(e.coop_deflect_shot_damage or 0)))
         end
-        if (at.bullet and not e.coop_deflect_broken and e.ready~=true)
-            or e.coop_deflect_break_turn==mode.turns then
+        if broke or (at.bullet and not e.coop_deflect_broken and e.ready~=true) then
             -- The native shield check returns before HP/death/escape effects.
             e.c_protected=16
         end
@@ -86,7 +90,9 @@ function coop_install_royal_cards()
     end,"coop_deflect_hit_restore")
     prepend("move_piece",function(e,sq)
         if coop_deflect_active(e) and sq and sq~=e.sq then
-            e.coop_deflect_broken=nil;e.coop_deflect_break_turn=nil
+            if e.coop_deflect_break_guard then e.c_protected=nil end
+            e.coop_deflect_broken=nil
+            e.coop_deflect_break_guard=nil
         end
     end,"coop_deflect_move")
     append("init_new_turn",coop_royal_cards_turn,"coop_abbey_heal")
